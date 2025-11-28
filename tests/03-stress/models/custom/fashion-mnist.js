@@ -1,42 +1,53 @@
-// tests/03-stress/models/custom/fashion-mnist.js
-// Stress test - push beyond normal load
-
+// tests/01-smoke/models/custom/fashion-mnist.js
+import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { getCustomModelUrl } from '../../../../config/environments.js';
-import { CUSTOM_MODEL_ENDPOINTS } from '../../../../config/endpoints.js';
-import { buildOptions } from '../../../../config/thresholds.js';
-import { postJson, healthCheck } from '../../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../helpers/data.js';
 
-const MODEL_NAME = 'fashion-mnist';
-const BASE_URL = getCustomModelUrl(MODEL_NAME);
-const ENDPOINTS = CUSTOM_MODEL_ENDPOINTS;
+const TEST_TYPE = 'stress';
+const TEST_TARGET = 'model-fashion-mnist';
 
-export const options = buildOptions('stress');
+const MODEL_URL = getCustomModelUrl('fashion-mnist');
+const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../data/fashion-mnist.json');
 
-const testData = loadJsonData('fashion-mnist-samples', '../../../../data/fashion-mnist.json');
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'fashion-health': {
+    exec: 'testHealth',
+  },
+  'fashion-predict': {
+    exec: 'testPredict',
+  },
+}, {
+  'http_req_duration{scenario:fashion-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:fashion-predict}': ['p(95)<5000'],
+});
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`💪 Stress Test: ${MODEL_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+export function testHealth() {
+  group('fashion-health', () => {
+    let res = http.get(`${MODEL_URL}/health`, { tags: { name: 'fashion-health' } });
+    checkHealth(res, 'fashion-health');
+
+    res = http.get(`${MODEL_URL}/info`, { tags: { name: 'fashion-info' } });
+    checkJsonField(res, 'fashion-info', 'model_name');
+  });
+  sleep(0.5);
+}
+
+export function testPredict() {
+  group('fashion-predict', () => {
+    const sample = randomSample(MNIST_DATA);
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'fashion-predict' },
+    });
+    checkPrediction(res, 'fashion-predict');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  if (testData.length === 0) return;
-
-  const sample = randomSample(testData);
-  const payload = { images: [sample] };
-
-  postJson(`${BASE_URL}${ENDPOINTS.predict}`, payload, `${MODEL_NAME}-predict`);
-
-  sleep(0.05 + Math.random() * 0.05);  // Minimal pause
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Stress test completed for ${MODEL_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testPredict();
 }

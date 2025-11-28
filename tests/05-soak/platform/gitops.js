@@ -1,33 +1,41 @@
-// tests/05-soak/platform/gitops.js
+// tests/01-smoke/platform/gitops.js
+import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';
-import { PLATFORM_ENDPOINTS } from '../../../config/endpoints.js';
 import { buildOptions } from '../../../config/thresholds.js';
-import { get, checkDuration } from '../../../helpers/http.js';
+import { checkHealth, checkStatus, checkJsonField } from '../../../helpers/checks.js';
 
-export const options = buildOptions('soak');
+const TEST_TYPE = 'soak';
+const TEST_TARGET = 'platform-gitops';
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log('🕐 Soak Test: GitOps Services');
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+const ARGOCD = ENV.platform.gitops.argocd;
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  argocd: {
+    exec: 'testArgoCD',
+  },
+}, {
+  'http_req_duration{scenario:argocd}': ['p(95)<2000'],
+});
+
+export function testArgoCD() {
+  group('argocd', () => {
+    // Health
+    let res = http.get(`${ARGOCD}/healthz`, { tags: { name: 'argocd-health' } });
+    checkHealth(res, 'argocd-health');
+
+    // Root
+    res = http.get(`${ARGOCD}/`, { tags: { name: 'argocd-root' } });
+    checkStatus(res, 'argocd-root', 200);
+
+    // Version API
+    res = http.get(`${ARGOCD}/api/version`, { tags: { name: 'argocd-version' } });
+    checkStatus(res, 'argocd-version', 200);
+    checkJsonField(res, 'argocd-version', 'Version');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  group('ArgoCD', () => {
-    const baseUrl = ENV.platform.gitops.argocd;
-    const endpoints = PLATFORM_ENDPOINTS.argocd;
-
-    const { response, ok } = get(`${baseUrl}${endpoints.health}`, 'argocd-health');
-    if (ok) checkDuration(response, 'argocd-health', 2000);
-  });
-
-  sleep(1 + Math.random() * 0.5);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log('✅ GitOps soak test completed');
-  console.log('='.repeat(60));
+  testArgoCD();
 }

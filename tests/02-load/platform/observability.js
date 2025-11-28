@@ -1,38 +1,37 @@
-// tests/02-load/platform/observability.js
+// tests/01-smoke/platform/observability.js
+import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';
-import { PLATFORM_ENDPOINTS } from '../../../config/endpoints.js';
 import { buildOptions } from '../../../config/thresholds.js';
-import { get, healthCheck, checkDuration } from '../../../helpers/http.js';
+import { checkHealth, checkStatus, checkJsonField } from '../../../helpers/checks.js';
 
-export const options = buildOptions('load');
+const TEST_TYPE = 'load';
+const TEST_TARGET = 'platform-obs';
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log('📊 Load Test: Observability Services');
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+const GRAFANA = ENV.platform.observability.grafana;
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  grafana: {
+    exec: 'testGrafana',
+  },
+}, {
+  'http_req_duration{scenario:grafana}': ['p(95)<2000'],
+});
+
+export function testGrafana() {
+  group('grafana', () => {
+    // Health API
+    let res = http.get(`${GRAFANA}/api/health`, { tags: { name: 'grafana-health' } });
+    checkHealth(res, 'grafana-health');
+    checkJsonField(res, 'grafana-health', 'database');
+
+    // Root
+    res = http.get(`${GRAFANA}/`, { tags: { name: 'grafana-root' } });
+    checkStatus(res, 'grafana-root', 200);
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  group('Grafana', () => {
-    const baseUrl = ENV.platform.observability.grafana;
-    const endpoints = PLATFORM_ENDPOINTS.grafana;
-
-    if (Math.random() < 0.5) {
-      const { response, healthy } = healthCheck(`${baseUrl}${endpoints.root}`, 'grafana-root');
-      if (healthy) checkDuration(response, 'grafana-root', 2000);
-    } else {
-      const { response, ok } = get(`${baseUrl}${endpoints.health}`, 'grafana-health');
-      if (ok) checkDuration(response, 'grafana-health', 2000);
-    }
-  });
-
-  sleep(0.2 + Math.random() * 0.3);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log('✅ Observability load test completed');
-  console.log('='.repeat(60));
+  testGrafana();
 }

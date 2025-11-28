@@ -1,14 +1,45 @@
 # k6-tests/Makefile
-# Test orchestration for k6 performance tests
+# Test orchestration for k6 performance tests with Grafana-compatible tagging
 
 TEST_ENV ?= dev
 RESULTS_DIR := results
-RUN_DIR := $(RESULTS_DIR)/$(shell date +%Y-%m-%d_%H-%M-%S)
+TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
+RUN_DIR := $(RESULTS_DIR)/$(TIMESTAMP)
 
+# Base k6 command
 K6 := k6 run --insecure-skip-tls-verify -e TEST_ENV=$(TEST_ENV)
 
+# Colors
+GREEN := \033[0;32m
+CYAN := \033[0;36m
+YELLOW := \033[0;33m
+NC := \033[0m
+
 $(RUN_DIR):
-	mkdir -p $(RUN_DIR)
+	@mkdir -p $(RUN_DIR)
+
+# Generic test runner with tagging
+# Usage: $(call run_k6,<test_type>,<test_target>,<script_path>)
+define run_k6
+	@echo ""
+	@echo "$(CYAN)════════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)🧪 $(1) test: $(2)$(NC)"
+	@echo "$(CYAN)════════════════════════════════════════════════════════════════$(NC)"
+	@echo "📋 testid: $(TIMESTAMP)"
+	@echo "📋 test_type: $(1)"
+	@echo "📋 test_target: $(2)"
+	@echo ""
+	$(K6) $(3) \
+		--tag testid=$(TIMESTAMP) \
+		--tag test_type=$(1) \
+		--tag test_target=$(2) \
+		--out json=$(RUN_DIR)/$(1)-$(2).json \
+		--summary-export=$(RUN_DIR)/$(1)-$(2)-summary.json
+	@echo ""
+	@echo "$(GREEN)✅ Complete: $(1)-$(2)$(NC)"
+	@echo "$(YELLOW)📊 Grafana: testid=$(TIMESTAMP), test_type=$(1), test_target=$(2)$(NC)"
+	@echo ""
+endef
 
 # ============================================================================
 # SMOKE TESTS
@@ -18,75 +49,45 @@ $(RUN_DIR):
 smoke: smoke-platform smoke-models smoke-apps  ## Run all smoke tests
 
 .PHONY: smoke-platform
-smoke-platform: smoke-platform-mlops smoke-platform-gitops smoke-platform-infra smoke-platform-obs  ## All platform smoke tests
+smoke-platform: smoke-mlops smoke-gitops smoke-infra smoke-obs  ## Platform smoke tests
 
-.PHONY: smoke-platform-mlops
-smoke-platform-mlops: $(RUN_DIR)
-	@echo "🧪 Smoke: MLOps services"
-	$(K6) tests/01-smoke/platform/mlops.js \
-		--out json=$(RUN_DIR)/smoke-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/smoke-platform-mlops-summary.json
+.PHONY: smoke-mlops
+smoke-mlops: $(RUN_DIR)
+	$(call run_k6,smoke,platform-mlops,tests/01-smoke/platform/mlops.js)
 
-.PHONY: smoke-platform-gitops
-smoke-platform-gitops: $(RUN_DIR)
-	@echo "🧪 Smoke: GitOps services"
-	$(K6) tests/01-smoke/platform/gitops.js \
-		--out json=$(RUN_DIR)/smoke-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/smoke-platform-gitops-summary.json
+.PHONY: smoke-gitops
+smoke-gitops: $(RUN_DIR)
+	$(call run_k6,smoke,platform-gitops,tests/01-smoke/platform/gitops.js)
 
-.PHONY: smoke-platform-infra
-smoke-platform-infra: $(RUN_DIR)
-	@echo "🧪 Smoke: Infrastructure services"
-	$(K6) tests/01-smoke/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/smoke-platform-infra.json \
-		--summary-export=$(RUN_DIR)/smoke-platform-infra-summary.json
+.PHONY: smoke-infra
+smoke-infra: $(RUN_DIR)
+	$(call run_k6,smoke,platform-infra,tests/01-smoke/platform/infrastructure.js)
 
-.PHONY: smoke-platform-obs
-smoke-platform-obs: $(RUN_DIR)
-	@echo "🧪 Smoke: Observability services"
-	$(K6) tests/01-smoke/platform/observability.js \
-		--out json=$(RUN_DIR)/smoke-platform-obs.json \
-		--summary-export=$(RUN_DIR)/smoke-platform-obs-summary.json
+.PHONY: smoke-obs
+smoke-obs: $(RUN_DIR)
+	$(call run_k6,smoke,platform-obs,tests/01-smoke/platform/observability.js)
 
 .PHONY: smoke-models
-smoke-models: smoke-models-custom smoke-models-base  ## All model smoke tests
-
-.PHONY: smoke-models-custom
-smoke-models-custom: smoke-fashion-mnist smoke-wine
-
-.PHONY: smoke-models-base
-smoke-models-base: smoke-qwen
+smoke-models: smoke-fashion-mnist smoke-wine smoke-qwen  ## Model smoke tests
 
 .PHONY: smoke-fashion-mnist
 smoke-fashion-mnist: $(RUN_DIR)
-	@echo "🧪 Smoke: Fashion MNIST"
-	$(K6) tests/01-smoke/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/smoke-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/smoke-fashion-mnist-summary.json
+	$(call run_k6,smoke,model-fashion-mnist,tests/01-smoke/models/custom/fashion-mnist.js)
 
 .PHONY: smoke-wine
 smoke-wine: $(RUN_DIR)
-	@echo "🧪 Smoke: Wine classifier"
-	$(K6) tests/01-smoke/models/custom/wine.js \
-		--out json=$(RUN_DIR)/smoke-wine.json \
-		--summary-export=$(RUN_DIR)/smoke-wine-summary.json
+	$(call run_k6,smoke,model-wine,tests/01-smoke/models/custom/wine.js)
 
 .PHONY: smoke-qwen
 smoke-qwen: $(RUN_DIR)
-	@echo "🧪 Smoke: Qwen LLM"
-	$(K6) tests/01-smoke/models/base/qwen.js \
-		--out json=$(RUN_DIR)/smoke-qwen.json \
-		--summary-export=$(RUN_DIR)/smoke-qwen-summary.json
+	$(call run_k6,smoke,model-qwen,tests/01-smoke/models/base/qwen.js)
 
 .PHONY: smoke-apps
-smoke-apps: smoke-demo-backend
+smoke-apps: smoke-backend  ## App smoke tests
 
-.PHONY: smoke-demo-backend
-smoke-demo-backend: $(RUN_DIR)
-	@echo "🧪 Smoke: Demo backend"
-	$(K6) tests/01-smoke/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/smoke-demo-backend.json \
-		--summary-export=$(RUN_DIR)/smoke-demo-backend-summary.json
+.PHONY: smoke-backend
+smoke-backend: $(RUN_DIR)
+	$(call run_k6,smoke,app-backend,tests/01-smoke/apps/demo-backend.js)
 
 # ============================================================================
 # LOAD TESTS
@@ -96,75 +97,45 @@ smoke-demo-backend: $(RUN_DIR)
 load: load-platform load-models load-apps  ## Run all load tests
 
 .PHONY: load-platform
-load-platform: load-platform-mlops load-platform-gitops load-platform-infra load-platform-obs
+load-platform: load-mlops load-gitops load-infra load-obs
 
-.PHONY: load-platform-mlops
-load-platform-mlops: $(RUN_DIR)
-	@echo "📊 Load: MLOps services"
-	$(K6) tests/02-load/platform/mlops.js \
-		--out json=$(RUN_DIR)/load-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/load-platform-mlops-summary.json
+.PHONY: load-mlops
+load-mlops: $(RUN_DIR)
+	$(call run_k6,load,platform-mlops,tests/02-load/platform/mlops.js)
 
-.PHONY: load-platform-gitops
-load-platform-gitops: $(RUN_DIR)
-	@echo "📊 Load: GitOps services"
-	$(K6) tests/02-load/platform/gitops.js \
-		--out json=$(RUN_DIR)/load-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/load-platform-gitops-summary.json
+.PHONY: load-gitops
+load-gitops: $(RUN_DIR)
+	$(call run_k6,load,platform-gitops,tests/02-load/platform/gitops.js)
 
-.PHONY: load-platform-infra
-load-platform-infra: $(RUN_DIR)
-	@echo "📊 Load: Infrastructure services"
-	$(K6) tests/02-load/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/load-platform-infra.json \
-		--summary-export=$(RUN_DIR)/load-platform-infra-summary.json
+.PHONY: load-infra
+load-infra: $(RUN_DIR)
+	$(call run_k6,load,platform-infra,tests/02-load/platform/infrastructure.js)
 
-.PHONY: load-platform-obs
-load-platform-obs: $(RUN_DIR)
-	@echo "📊 Load: Observability services"
-	$(K6) tests/02-load/platform/observability.js \
-		--out json=$(RUN_DIR)/load-platform-obs.json \
-		--summary-export=$(RUN_DIR)/load-platform-obs-summary.json
+.PHONY: load-obs
+load-obs: $(RUN_DIR)
+	$(call run_k6,load,platform-obs,tests/02-load/platform/observability.js)
 
 .PHONY: load-models
-load-models: load-models-custom load-models-base
-
-.PHONY: load-models-custom
-load-models-custom: load-fashion-mnist load-wine
-
-.PHONY: load-models-base
-load-models-base: load-qwen
+load-models: load-fashion-mnist load-wine load-qwen
 
 .PHONY: load-fashion-mnist
 load-fashion-mnist: $(RUN_DIR)
-	@echo "📊 Load: Fashion MNIST"
-	$(K6) tests/02-load/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/load-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/load-fashion-mnist-summary.json
+	$(call run_k6,load,model-fashion-mnist,tests/02-load/models/custom/fashion-mnist.js)
 
 .PHONY: load-wine
 load-wine: $(RUN_DIR)
-	@echo "📊 Load: Wine classifier"
-	$(K6) tests/02-load/models/custom/wine.js \
-		--out json=$(RUN_DIR)/load-wine.json \
-		--summary-export=$(RUN_DIR)/load-wine-summary.json
+	$(call run_k6,load,model-wine,tests/02-load/models/custom/wine.js)
 
 .PHONY: load-qwen
 load-qwen: $(RUN_DIR)
-	@echo "📊 Load: Qwen LLM"
-	$(K6) tests/02-load/models/base/qwen.js \
-		--out json=$(RUN_DIR)/load-qwen.json \
-		--summary-export=$(RUN_DIR)/load-qwen-summary.json
+	$(call run_k6,load,model-qwen,tests/02-load/models/base/qwen.js)
 
 .PHONY: load-apps
-load-apps: load-demo-backend
+load-apps: load-backend
 
-.PHONY: load-demo-backend
-load-demo-backend: $(RUN_DIR)
-	@echo "📊 Load: Demo backend"
-	$(K6) tests/02-load/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/load-demo-backend.json \
-		--summary-export=$(RUN_DIR)/load-demo-backend-summary.json
+.PHONY: load-backend
+load-backend: $(RUN_DIR)
+	$(call run_k6,load,app-backend,tests/02-load/apps/demo-backend.js)
 
 # ============================================================================
 # STRESS TESTS
@@ -174,69 +145,45 @@ load-demo-backend: $(RUN_DIR)
 stress: stress-platform stress-models stress-apps  ## Run all stress tests
 
 .PHONY: stress-platform
-stress-platform: stress-platform-mlops stress-platform-gitops stress-platform-infra stress-platform-obs
+stress-platform: stress-mlops stress-gitops stress-infra stress-obs
 
-.PHONY: stress-platform-mlops
-stress-platform-mlops: $(RUN_DIR)
-	@echo "💪 Stress: MLOps services"
-	$(K6) tests/03-stress/platform/mlops.js \
-		--out json=$(RUN_DIR)/stress-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/stress-platform-mlops-summary.json
+.PHONY: stress-mlops
+stress-mlops: $(RUN_DIR)
+	$(call run_k6,stress,platform-mlops,tests/03-stress/platform/mlops.js)
 
-.PHONY: stress-platform-gitops
-stress-platform-gitops: $(RUN_DIR)
-	@echo "💪 Stress: GitOps services"
-	$(K6) tests/03-stress/platform/gitops.js \
-		--out json=$(RUN_DIR)/stress-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/stress-platform-gitops-summary.json
+.PHONY: stress-gitops
+stress-gitops: $(RUN_DIR)
+	$(call run_k6,stress,platform-gitops,tests/03-stress/platform/gitops.js)
 
-.PHONY: stress-platform-infra
-stress-platform-infra: $(RUN_DIR)
-	@echo "💪 Stress: Infrastructure services"
-	$(K6) tests/03-stress/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/stress-platform-infra.json \
-		--summary-export=$(RUN_DIR)/stress-platform-infra-summary.json
+.PHONY: stress-infra
+stress-infra: $(RUN_DIR)
+	$(call run_k6,stress,platform-infra,tests/03-stress/platform/infrastructure.js)
 
-.PHONY: stress-platform-obs
-stress-platform-obs: $(RUN_DIR)
-	@echo "💪 Stress: Observability services"
-	$(K6) tests/03-stress/platform/observability.js \
-		--out json=$(RUN_DIR)/stress-platform-obs.json \
-		--summary-export=$(RUN_DIR)/stress-platform-obs-summary.json
+.PHONY: stress-obs
+stress-obs: $(RUN_DIR)
+	$(call run_k6,stress,platform-obs,tests/03-stress/platform/observability.js)
 
 .PHONY: stress-models
 stress-models: stress-fashion-mnist stress-wine stress-qwen
 
 .PHONY: stress-fashion-mnist
 stress-fashion-mnist: $(RUN_DIR)
-	@echo "💪 Stress: Fashion MNIST"
-	$(K6) tests/03-stress/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/stress-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/stress-fashion-mnist-summary.json
+	$(call run_k6,stress,model-fashion-mnist,tests/03-stress/models/custom/fashion-mnist.js)
 
 .PHONY: stress-wine
 stress-wine: $(RUN_DIR)
-	@echo "💪 Stress: Wine classifier"
-	$(K6) tests/03-stress/models/custom/wine.js \
-		--out json=$(RUN_DIR)/stress-wine.json \
-		--summary-export=$(RUN_DIR)/stress-wine-summary.json
+	$(call run_k6,stress,model-wine,tests/03-stress/models/custom/wine.js)
 
 .PHONY: stress-qwen
 stress-qwen: $(RUN_DIR)
-	@echo "💪 Stress: Qwen LLM"
-	$(K6) tests/03-stress/models/base/qwen.js \
-		--out json=$(RUN_DIR)/stress-qwen.json \
-		--summary-export=$(RUN_DIR)/stress-qwen-summary.json
+	$(call run_k6,stress,model-qwen,tests/03-stress/models/base/qwen.js)
 
 .PHONY: stress-apps
-stress-apps: stress-demo-backend
+stress-apps: stress-backend
 
-.PHONY: stress-demo-backend
-stress-demo-backend: $(RUN_DIR)
-	@echo "💪 Stress: Demo backend"
-	$(K6) tests/03-stress/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/stress-demo-backend.json \
-		--summary-export=$(RUN_DIR)/stress-demo-backend-summary.json
+.PHONY: stress-backend
+stress-backend: $(RUN_DIR)
+	$(call run_k6,stress,app-backend,tests/03-stress/apps/demo-backend.js)
 
 # ============================================================================
 # SPIKE TESTS
@@ -246,141 +193,93 @@ stress-demo-backend: $(RUN_DIR)
 spike: spike-platform spike-models spike-apps  ## Run all spike tests
 
 .PHONY: spike-platform
-spike-platform: spike-platform-mlops spike-platform-gitops spike-platform-infra spike-platform-obs
+spike-platform: spike-mlops spike-gitops spike-infra spike-obs
 
-.PHONY: spike-platform-mlops
-spike-platform-mlops: $(RUN_DIR)
-	@echo "📈 Spike: MLOps services"
-	$(K6) tests/04-spike/platform/mlops.js \
-		--out json=$(RUN_DIR)/spike-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/spike-platform-mlops-summary.json
+.PHONY: spike-mlops
+spike-mlops: $(RUN_DIR)
+	$(call run_k6,spike,platform-mlops,tests/04-spike/platform/mlops.js)
 
-.PHONY: spike-platform-gitops
-spike-platform-gitops: $(RUN_DIR)
-	@echo "📈 Spike: GitOps services"
-	$(K6) tests/04-spike/platform/gitops.js \
-		--out json=$(RUN_DIR)/spike-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/spike-platform-gitops-summary.json
+.PHONY: spike-gitops
+spike-gitops: $(RUN_DIR)
+	$(call run_k6,spike,platform-gitops,tests/04-spike/platform/gitops.js)
 
-.PHONY: spike-platform-infra
-spike-platform-infra: $(RUN_DIR)
-	@echo "📈 Spike: Infrastructure services"
-	$(K6) tests/04-spike/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/spike-platform-infra.json \
-		--summary-export=$(RUN_DIR)/spike-platform-infra-summary.json
+.PHONY: spike-infra
+spike-infra: $(RUN_DIR)
+	$(call run_k6,spike,platform-infra,tests/04-spike/platform/infrastructure.js)
 
-.PHONY: spike-platform-obs
-spike-platform-obs: $(RUN_DIR)
-	@echo "📈 Spike: Observability services"
-	$(K6) tests/04-spike/platform/observability.js \
-		--out json=$(RUN_DIR)/spike-platform-obs.json \
-		--summary-export=$(RUN_DIR)/spike-platform-obs-summary.json
+.PHONY: spike-obs
+spike-obs: $(RUN_DIR)
+	$(call run_k6,spike,platform-obs,tests/04-spike/platform/observability.js)
 
 .PHONY: spike-models
 spike-models: spike-fashion-mnist spike-wine spike-qwen
 
 .PHONY: spike-fashion-mnist
 spike-fashion-mnist: $(RUN_DIR)
-	@echo "📈 Spike: Fashion MNIST"
-	$(K6) tests/04-spike/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/spike-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/spike-fashion-mnist-summary.json
+	$(call run_k6,spike,model-fashion-mnist,tests/04-spike/models/custom/fashion-mnist.js)
 
 .PHONY: spike-wine
 spike-wine: $(RUN_DIR)
-	@echo "📈 Spike: Wine classifier"
-	$(K6) tests/04-spike/models/custom/wine.js \
-		--out json=$(RUN_DIR)/spike-wine.json \
-		--summary-export=$(RUN_DIR)/spike-wine-summary.json
+	$(call run_k6,spike,model-wine,tests/04-spike/models/custom/wine.js)
 
 .PHONY: spike-qwen
 spike-qwen: $(RUN_DIR)
-	@echo "📈 Spike: Qwen LLM"
-	$(K6) tests/04-spike/models/base/qwen.js \
-		--out json=$(RUN_DIR)/spike-qwen.json \
-		--summary-export=$(RUN_DIR)/spike-qwen-summary.json
+	$(call run_k6,spike,model-qwen,tests/04-spike/models/base/qwen.js)
 
 .PHONY: spike-apps
-spike-apps: spike-demo-backend
+spike-apps: spike-backend
 
-.PHONY: spike-demo-backend
-spike-demo-backend: $(RUN_DIR)
-	@echo "📈 Spike: Demo backend"
-	$(K6) tests/04-spike/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/spike-demo-backend.json \
-		--summary-export=$(RUN_DIR)/spike-demo-backend-summary.json
+.PHONY: spike-backend
+spike-backend: $(RUN_DIR)
+	$(call run_k6,spike,app-backend,tests/04-spike/apps/demo-backend.js)
 
 # ============================================================================
-# SOAK TESTS
+# SOAK TESTS (long running)
 # ============================================================================
 
 .PHONY: soak
-soak: soak-platform soak-models soak-apps  ## Run all soak tests (long!)
+soak: soak-platform soak-models soak-apps  ## Run all soak tests (30+ min each!)
 
 .PHONY: soak-platform
-soak-platform: soak-platform-mlops soak-platform-gitops soak-platform-infra soak-platform-obs
+soak-platform: soak-mlops soak-gitops soak-infra soak-obs
 
-.PHONY: soak-platform-mlops
-soak-platform-mlops: $(RUN_DIR)
-	@echo "🕐 Soak: MLOps services"
-	$(K6) tests/05-soak/platform/mlops.js \
-		--out json=$(RUN_DIR)/soak-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/soak-platform-mlops-summary.json
+.PHONY: soak-mlops
+soak-mlops: $(RUN_DIR)
+	$(call run_k6,soak,platform-mlops,tests/05-soak/platform/mlops.js)
 
-.PHONY: soak-platform-gitops
-soak-platform-gitops: $(RUN_DIR)
-	@echo "🕐 Soak: GitOps services"
-	$(K6) tests/05-soak/platform/gitops.js \
-		--out json=$(RUN_DIR)/soak-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/soak-platform-gitops-summary.json
+.PHONY: soak-gitops
+soak-gitops: $(RUN_DIR)
+	$(call run_k6,soak,platform-gitops,tests/05-soak/platform/gitops.js)
 
-.PHONY: soak-platform-infra
-soak-platform-infra: $(RUN_DIR)
-	@echo "🕐 Soak: Infrastructure services"
-	$(K6) tests/05-soak/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/soak-platform-infra.json \
-		--summary-export=$(RUN_DIR)/soak-platform-infra-summary.json
+.PHONY: soak-infra
+soak-infra: $(RUN_DIR)
+	$(call run_k6,soak,platform-infra,tests/05-soak/platform/infrastructure.js)
 
-.PHONY: soak-platform-obs
-soak-platform-obs: $(RUN_DIR)
-	@echo "🕐 Soak: Observability services"
-	$(K6) tests/05-soak/platform/observability.js \
-		--out json=$(RUN_DIR)/soak-platform-obs.json \
-		--summary-export=$(RUN_DIR)/soak-platform-obs-summary.json
+.PHONY: soak-obs
+soak-obs: $(RUN_DIR)
+	$(call run_k6,soak,platform-obs,tests/05-soak/platform/observability.js)
 
 .PHONY: soak-models
 soak-models: soak-fashion-mnist soak-wine soak-qwen
 
 .PHONY: soak-fashion-mnist
 soak-fashion-mnist: $(RUN_DIR)
-	@echo "🕐 Soak: Fashion MNIST"
-	$(K6) tests/05-soak/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/soak-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/soak-fashion-mnist-summary.json
+	$(call run_k6,soak,model-fashion-mnist,tests/05-soak/models/custom/fashion-mnist.js)
 
 .PHONY: soak-wine
 soak-wine: $(RUN_DIR)
-	@echo "🕐 Soak: Wine classifier"
-	$(K6) tests/05-soak/models/custom/wine.js \
-		--out json=$(RUN_DIR)/soak-wine.json \
-		--summary-export=$(RUN_DIR)/soak-wine-summary.json
+	$(call run_k6,soak,model-wine,tests/05-soak/models/custom/wine.js)
 
 .PHONY: soak-qwen
 soak-qwen: $(RUN_DIR)
-	@echo "🕐 Soak: Qwen LLM"
-	$(K6) tests/05-soak/models/base/qwen.js \
-		--out json=$(RUN_DIR)/soak-qwen.json \
-		--summary-export=$(RUN_DIR)/soak-qwen-summary.json
+	$(call run_k6,soak,model-qwen,tests/05-soak/models/base/qwen.js)
 
 .PHONY: soak-apps
-soak-apps: soak-demo-backend
+soak-apps: soak-backend
 
-.PHONY: soak-demo-backend
-soak-demo-backend: $(RUN_DIR)
-	@echo "🕐 Soak: Demo backend"
-	$(K6) tests/05-soak/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/soak-demo-backend.json \
-		--summary-export=$(RUN_DIR)/soak-demo-backend-summary.json
+.PHONY: soak-backend
+soak-backend: $(RUN_DIR)
+	$(call run_k6,soak,app-backend,tests/05-soak/apps/demo-backend.js)
 
 # ============================================================================
 # BREAKPOINT TESTS
@@ -390,69 +289,58 @@ soak-demo-backend: $(RUN_DIR)
 breakpoint: breakpoint-platform breakpoint-models breakpoint-apps  ## Run all breakpoint tests
 
 .PHONY: breakpoint-platform
-breakpoint-platform: breakpoint-platform-mlops breakpoint-platform-gitops breakpoint-platform-infra breakpoint-platform-obs
+breakpoint-platform: breakpoint-mlops breakpoint-gitops breakpoint-infra breakpoint-obs
 
-.PHONY: breakpoint-platform-mlops
-breakpoint-platform-mlops: $(RUN_DIR)
-	@echo "🔥 Breakpoint: MLOps services"
-	$(K6) tests/06-breakpoint/platform/mlops.js \
-		--out json=$(RUN_DIR)/breakpoint-platform-mlops.json \
-		--summary-export=$(RUN_DIR)/breakpoint-platform-mlops-summary.json
+.PHONY: breakpoint-mlops
+breakpoint-mlops: $(RUN_DIR)
+	$(call run_k6,breakpoint,platform-mlops,tests/06-breakpoint/platform/mlops.js)
 
-.PHONY: breakpoint-platform-gitops
-breakpoint-platform-gitops: $(RUN_DIR)
-	@echo "🔥 Breakpoint: GitOps services"
-	$(K6) tests/06-breakpoint/platform/gitops.js \
-		--out json=$(RUN_DIR)/breakpoint-platform-gitops.json \
-		--summary-export=$(RUN_DIR)/breakpoint-platform-gitops-summary.json
+.PHONY: breakpoint-gitops
+breakpoint-gitops: $(RUN_DIR)
+	$(call run_k6,breakpoint,platform-gitops,tests/06-breakpoint/platform/gitops.js)
 
-.PHONY: breakpoint-platform-infra
-breakpoint-platform-infra: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Infrastructure services"
-	$(K6) tests/06-breakpoint/platform/infrastructure.js \
-		--out json=$(RUN_DIR)/breakpoint-platform-infra.json \
-		--summary-export=$(RUN_DIR)/breakpoint-platform-infra-summary.json
+.PHONY: breakpoint-infra
+breakpoint-infra: $(RUN_DIR)
+	$(call run_k6,breakpoint,platform-infra,tests/06-breakpoint/platform/infrastructure.js)
 
-.PHONY: breakpoint-platform-obs
-breakpoint-platform-obs: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Observability services"
-	$(K6) tests/06-breakpoint/platform/observability.js \
-		--out json=$(RUN_DIR)/breakpoint-platform-obs.json \
-		--summary-export=$(RUN_DIR)/breakpoint-platform-obs-summary.json
+.PHONY: breakpoint-obs
+breakpoint-obs: $(RUN_DIR)
+	$(call run_k6,breakpoint,platform-obs,tests/06-breakpoint/platform/observability.js)
 
 .PHONY: breakpoint-models
 breakpoint-models: breakpoint-fashion-mnist breakpoint-wine breakpoint-qwen
 
 .PHONY: breakpoint-fashion-mnist
 breakpoint-fashion-mnist: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Fashion MNIST"
-	$(K6) tests/06-breakpoint/models/custom/fashion-mnist.js \
-		--out json=$(RUN_DIR)/breakpoint-fashion-mnist.json \
-		--summary-export=$(RUN_DIR)/breakpoint-fashion-mnist-summary.json
+	$(call run_k6,breakpoint,model-fashion-mnist,tests/06-breakpoint/models/custom/fashion-mnist.js)
 
 .PHONY: breakpoint-wine
 breakpoint-wine: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Wine classifier"
-	$(K6) tests/06-breakpoint/models/custom/wine.js \
-		--out json=$(RUN_DIR)/breakpoint-wine.json \
-		--summary-export=$(RUN_DIR)/breakpoint-wine-summary.json
+	$(call run_k6,breakpoint,model-wine,tests/06-breakpoint/models/custom/wine.js)
 
 .PHONY: breakpoint-qwen
 breakpoint-qwen: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Qwen LLM"
-	$(K6) tests/06-breakpoint/models/base/qwen.js \
-		--out json=$(RUN_DIR)/breakpoint-qwen.json \
-		--summary-export=$(RUN_DIR)/breakpoint-qwen-summary.json
+	$(call run_k6,breakpoint,model-qwen,tests/06-breakpoint/models/base/qwen.js)
 
 .PHONY: breakpoint-apps
-breakpoint-apps: breakpoint-demo-backend
+breakpoint-apps: breakpoint-backend
 
-.PHONY: breakpoint-demo-backend
-breakpoint-demo-backend: $(RUN_DIR)
-	@echo "🔥 Breakpoint: Demo backend"
-	$(K6) tests/06-breakpoint/apps/demo-backend.js \
-		--out json=$(RUN_DIR)/breakpoint-demo-backend.json \
-		--summary-export=$(RUN_DIR)/breakpoint-demo-backend-summary.json
+.PHONY: breakpoint-backend
+breakpoint-backend: $(RUN_DIR)
+	$(call run_k6,breakpoint,app-backend,tests/06-breakpoint/apps/demo-backend.js)
+
+# ============================================================================
+# COMBINED SUITES
+# ============================================================================
+
+.PHONY: full-platform
+full-platform: smoke-platform load-platform stress-platform spike-platform  ## Full platform test suite
+
+.PHONY: full-mlops
+full-mlops: smoke-mlops load-mlops stress-mlops spike-mlops  ## Full MLOps test suite
+
+.PHONY: quick
+quick: smoke-platform  ## Quick smoke test for CI
 
 # ============================================================================
 # UTILITIES
@@ -473,6 +361,17 @@ summary:  ## Show summary of latest results
 
 .PHONY: help
 help:  ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
+	@echo "$(CYAN)k6 Test Runner$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Test Types:$(NC)"
+	@echo "  smoke      - Quick health checks (10s)"
+	@echo "  load       - Normal load (~9min)"
+	@echo "  stress     - Beyond normal (~8min)"
+	@echo "  spike      - Sudden bursts (~2.5min)"
+	@echo "  soak       - Extended duration (~34min)"
+	@echo "  breakpoint - Find limits (~10min)"
+	@echo ""
+	@echo "$(YELLOW)Targets:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
 
 .DEFAULT_GOAL := help

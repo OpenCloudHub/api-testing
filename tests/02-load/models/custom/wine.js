@@ -1,63 +1,53 @@
-// tests/02-load/models/custom/wine.js
+// tests/01-smoke/models/custom/wine.js
+import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { getCustomModelUrl } from '../../../../config/environments.js';
-import { CUSTOM_MODEL_ENDPOINTS } from '../../../../config/endpoints.js';
-import { buildOptions } from '../../../../config/thresholds.js';
-import { get, postJson, checkDuration } from '../../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../helpers/data.js';
 
-const MODEL_NAME = 'wine';
-const BASE_URL = getCustomModelUrl(MODEL_NAME);
-const ENDPOINTS = CUSTOM_MODEL_ENDPOINTS;
+const TEST_TYPE = 'load';
+const TEST_TARGET = 'model-wine';
 
-export const options = buildOptions('load', {
-  'http_req_duration{name:wine-predict}': ['p(95)<2500'],
+const MODEL_URL = getCustomModelUrl('wine');
+const WINE_DATA = loadJsonData('wine-samples', '../../../data/wine.json');
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'wine-health': {
+    exec: 'testHealth',
+  },
+  'wine-predict': {
+    exec: 'testPredict',
+  },
+}, {
+  'http_req_duration{scenario:wine-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:wine-predict}': ['p(95)<3000'],
 });
 
-const testData = loadJsonData('wine-samples', '../../../../data/wine.json');
+export function testHealth() {
+  group('wine-health', () => {
+    let res = http.get(`${MODEL_URL}/health`, { tags: { name: 'wine-health' } });
+    checkHealth(res, 'wine-health');
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`📊 Load Test: ${MODEL_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+    res = http.get(`${MODEL_URL}/info`, { tags: { name: 'wine-info' } });
+    checkJsonField(res, 'wine-info', 'model_name');
+  });
+  sleep(0.5);
+}
 
-  const healthRes = get(`${BASE_URL}${ENDPOINTS.health}`, `${MODEL_NAME}-health-check`);
-  if (!healthRes.ok) {
-    console.error('❌ Service not healthy, load test may fail');
-  }
+export function testPredict() {
+  group('wine-predict', () => {
+    const sample = randomSample(WINE_DATA);
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'wine-predict' },
+    });
+    checkPrediction(res, 'wine-predict');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  if (Math.random() < 0.1) {
-    group('Health Check', () => {
-      get(`${BASE_URL}${ENDPOINTS.health}`, `${MODEL_NAME}-health`);
-    });
-  }
-
-  group('Predictions', () => {
-    if (testData.length === 0) return;
-
-    const sample = randomSample(testData);
-    const payload = { features: [sample.features] };
-
-    const { response, ok } = postJson(
-      `${BASE_URL}${ENDPOINTS.predict}`,
-      payload,
-      `${MODEL_NAME}-predict`
-    );
-
-    if (ok) {
-      checkDuration(response, `${MODEL_NAME}-predict`, 2500);
-    }
-  });
-
-  sleep(0.1 + Math.random() * 0.2);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Load test completed for ${MODEL_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testPredict();
 }

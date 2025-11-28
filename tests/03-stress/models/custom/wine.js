@@ -1,40 +1,53 @@
-// tests/03-stress/models/custom/wine.js
-import { sleep } from 'k6';
-import { getCustomModelUrl } from '../../../../config/environments.js';
-import { CUSTOM_MODEL_ENDPOINTS } from '../../../../config/endpoints.js';
-import { buildOptions } from '../../../../config/thresholds.js';
-import { postJson } from '../../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../../helpers/data.js';
+// tests/01-smoke/models/custom/wine.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
+import { ENV, getCustomModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../helpers/data.js';
 
-const MODEL_NAME = 'wine';
-const BASE_URL = getCustomModelUrl(MODEL_NAME);
-const ENDPOINTS = CUSTOM_MODEL_ENDPOINTS;
+const TEST_TYPE = 'stress';
+const TEST_TARGET = 'model-wine';
 
-export const options = buildOptions('stress');
+const MODEL_URL = getCustomModelUrl('wine');
+const WINE_DATA = loadJsonData('wine-samples', '../../../data/wine.json');
 
-const testData = loadJsonData('wine-samples', '../../../../data/wine.json');
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'wine-health': {
+    exec: 'testHealth',
+  },
+  'wine-predict': {
+    exec: 'testPredict',
+  },
+}, {
+  'http_req_duration{scenario:wine-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:wine-predict}': ['p(95)<3000'],
+});
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`💪 Stress Test: ${MODEL_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+export function testHealth() {
+  group('wine-health', () => {
+    let res = http.get(`${MODEL_URL}/health`, { tags: { name: 'wine-health' } });
+    checkHealth(res, 'wine-health');
+
+    res = http.get(`${MODEL_URL}/info`, { tags: { name: 'wine-info' } });
+    checkJsonField(res, 'wine-info', 'model_name');
+  });
+  sleep(0.5);
+}
+
+export function testPredict() {
+  group('wine-predict', () => {
+    const sample = randomSample(WINE_DATA);
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'wine-predict' },
+    });
+    checkPrediction(res, 'wine-predict');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  if (testData.length === 0) return;
-
-  const sample = randomSample(testData);
-  const payload = { features: [sample.features] };
-
-  postJson(`${BASE_URL}${ENDPOINTS.predict}`, payload, `${MODEL_NAME}-predict`);
-
-  sleep(0.05 + Math.random() * 0.05);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Stress test completed for ${MODEL_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testPredict();
 }

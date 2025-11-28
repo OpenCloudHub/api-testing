@@ -1,48 +1,53 @@
-// tests/03-stress/apps/demo-backend.js
-import { sleep } from 'k6';
+// tests/01-smoke/apps/demo-backend.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';
-import { DEMO_BACKEND_ENDPOINTS } from '../../../config/endpoints.js';
 import { buildOptions } from '../../../config/thresholds.js';
-import { postJson } from '../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../helpers/data.js';
+import { checkHealth, checkStatus, checkJsonField } from '../../../helpers/checks.js';
 
-const APP_NAME = 'demo-backend';
-const BASE_URL = ENV.apps['demo-backend'];
-const ENDPOINTS = DEMO_BACKEND_ENDPOINTS;
+const TEST_TYPE = 'stress';
+const TEST_TARGET = 'app-backend';
 
-export const options = buildOptions('stress');
+const BACKEND = ENV.apps['demo-backend'];
 
-const testData = loadJsonData('rag-queries', '../../../data/rag-queries.json');
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'backend-health': {
+    exec: 'testHealth',
+  },
+  'backend-api': {
+    exec: 'testApi',
+  },
+}, {
+  'http_req_duration{scenario:backend-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:backend-api}': ['p(95)<5000'],
+});
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`💪 Stress Test: ${APP_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+export function testHealth() {
+  group('backend-health', () => {
+    let res = http.get(`${BACKEND}/api/health`, { tags: { name: 'backend-health' } });
+    checkHealth(res, 'backend-health');
+
+    res = http.get(`${BACKEND}/api/`, { tags: { name: 'backend-root' } });
+    checkStatus(res, 'backend-root', 200);
+  });
+  sleep(0.5);
+}
+
+export function testApi() {
+  group('backend-api', () => {
+    // Test prompt endpoint
+    const res = http.post(`${BACKEND}/api/prompt`, JSON.stringify({
+      query: 'What is MLOps?',
+    }), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'backend-prompt' },
+    });
+    checkStatus(res, 'backend-prompt', 200);
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  if (testData.length === 0) return;
-
-  const sample = randomSample(testData);
-  const payload = {
-    question: sample.question,
-    stream: false,
-  };
-
-  postJson(
-    `${BASE_URL}${ENDPOINTS.query}`,
-    payload,
-    `${APP_NAME}-query`,
-    { timeout: '30s' }
-  );
-
-  sleep(0.3 + Math.random() * 0.2);  // Some pause - RAG is heavy
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Stress test completed for ${APP_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testApi();
 }

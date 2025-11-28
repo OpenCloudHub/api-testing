@@ -1,27 +1,52 @@
-// tests/06-breakpoint/platform/infrastructure.js
+// tests/01-smoke/platform/infrastructure.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';
-import { PLATFORM_ENDPOINTS } from '../../../config/endpoints.js';
 import { buildOptions } from '../../../config/thresholds.js';
-import { healthCheck } from '../../../helpers/http.js';
+import { checkHealth, checkStatus } from '../../../helpers/checks.js';
 
-export const options = buildOptions('breakpoint');
+const TEST_TYPE = 'breakpoint';
+const TEST_TARGET = 'platform-infra';
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log('🔥 Breakpoint Test: Infrastructure Services');
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+const MINIO_CONSOLE = ENV.platform.infrastructure['minio-console'];
+const MINIO_API = ENV.platform.infrastructure['minio-api'];
+const PGADMIN = ENV.platform.infrastructure.pgadmin;
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  minio: {
+    exec: 'testMinio',
+  },
+  pgadmin: {
+    exec: 'testPgAdmin',
+  },
+}, {
+  'http_req_duration{scenario:minio}': ['p(95)<2000'],
+  'http_req_duration{scenario:pgadmin}': ['p(95)<3000'],
+});
+
+export function testMinio() {
+  group('minio', () => {
+    // Console root
+    let res = http.get(`${MINIO_CONSOLE}/`, { tags: { name: 'minio-console-root' } });
+    checkStatus(res, 'minio-console-root', 200);
+
+    // API health
+    res = http.get(`${MINIO_API}/minio/health/live`, { tags: { name: 'minio-api-health' } });
+    checkHealth(res, 'minio-api-health');
+  });
+  sleep(0.5);
+}
+
+export function testPgAdmin() {
+  group('pgadmin', () => {
+    let res = http.get(`${PGADMIN}/`, { tags: { name: 'pgadmin-root' } });
+    // pgAdmin redirects to login
+    checkStatus(res, 'pgadmin-root', 200) || checkStatus(res, 'pgadmin-root', 302);
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  healthCheck(
-    `${ENV.platform.infrastructure['minio-api']}${PLATFORM_ENDPOINTS['minio-api'].health}`,
-    'minio-api-health'
-  );
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log('✅ Infrastructure breakpoint test completed');
-  console.log('='.repeat(60));
+  testMinio();
+  testPgAdmin();
 }

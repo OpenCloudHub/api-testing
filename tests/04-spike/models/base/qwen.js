@@ -1,45 +1,54 @@
-// tests/04-spike/models/base/qwen.js
-import { sleep } from 'k6';
-import { getBaseModelUrl } from '../../../../config/environments.js';
-import { BASE_MODEL_ENDPOINTS } from '../../../../config/endpoints.js';
-import { buildOptions } from '../../../../config/thresholds.js';
-import { postJson } from '../../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../../helpers/data.js';
+// tests/01-smoke/models/base/qwen.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
+import { ENV, getBaseModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkCompletion, checkJsonField } from '../../../helpers/checks.js';
 
-const MODEL_NAME = 'qwen-0.5b';
-const BASE_URL = getBaseModelUrl(MODEL_NAME);
-const ENDPOINTS = BASE_MODEL_ENDPOINTS;
+const TEST_TYPE = 'spike';
+const TEST_TARGET = 'model-qwen';
 
-export const options = buildOptions('spike');
+const MODEL_URL = getBaseModelUrl('qwen-0.5b');
 
-const testData = loadJsonData('qwen-prompts', '../../../../data/qwen-prompts.json');
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'qwen-health': {
+    exec: 'testHealth',
+  },
+  'qwen-completion': {
+    exec: 'testCompletion',
+  },
+}, {
+  'http_req_duration{scenario:qwen-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:qwen-completion}': ['p(95)<30000'], // LLMs are slow
+});
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`📈 Spike Test: ${MODEL_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+export function testHealth() {
+  group('qwen-health', () => {
+    let res = http.get(`${MODEL_URL}/models`, { tags: { name: 'qwen-models' } });
+    checkHealth(res, 'qwen-models');
+    checkJsonField(res, 'qwen-models', 'data');
+  });
+  sleep(0.5);
+}
+
+export function testCompletion() {
+  group('qwen-completion', () => {
+    const payload = {
+      model: 'qwen-0.5b',
+      messages: [{ role: 'user', content: 'Hello, who are you?' }],
+      max_tokens: 50,
+    };
+    const res = http.post(`${MODEL_URL}/chat/completions`, JSON.stringify(payload), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'qwen-chat' },
+      timeout: '60s',
+    });
+    checkCompletion(res, 'qwen-chat');
+  });
+  sleep(1);
 }
 
 export default function () {
-  if (testData.length === 0) return;
-
-  const sample = randomSample(testData);
-  const payload = {
-    model: MODEL_NAME,
-    messages: sample.messages,
-    max_tokens: 20,  // Minimal for spike
-    temperature: 0.7,
-  };
-
-  postJson(`${BASE_URL}${ENDPOINTS.chat}`, payload, `${MODEL_NAME}-chat`);
-
-  sleep(0.05);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Spike test completed for ${MODEL_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testCompletion();
 }

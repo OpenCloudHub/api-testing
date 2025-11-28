@@ -1,57 +1,53 @@
-// tests/04-spike/models/custom/fashion-mnist.js
-// Spike test - sudden traffic bursts
+// tests/01-smoke/models/custom/fashion-mnist.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
+import { ENV, getCustomModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../helpers/data.js';
 
-import { group, sleep
-} from 'k6';
-import { getCustomModelUrl
-} from '../../../../config/environments.js';
-import { CUSTOM_MODEL_ENDPOINTS
-} from '../../../../config/endpoints.js';
-import { buildOptions
-} from '../../../../config/thresholds.js';
-import { postJson
-} from '../../../../helpers/http.js';
-import { loadJsonData, randomSample
-} from '../../../../helpers/data.js';
+const TEST_TYPE = 'spike';
+const TEST_TARGET = 'model-fashion-mnist';
 
-const MODEL_NAME = 'fashion-mnist';
-const BASE_URL = getCustomModelUrl(MODEL_NAME);
-const ENDPOINTS = CUSTOM_MODEL_ENDPOINTS;
+const MODEL_URL = getCustomModelUrl('fashion-mnist');
+const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../data/fashion-mnist.json');
 
-export const options = buildOptions('spike');
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'fashion-health': {
+    exec: 'testHealth',
+  },
+  'fashion-predict': {
+    exec: 'testPredict',
+  },
+}, {
+  'http_req_duration{scenario:fashion-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:fashion-predict}': ['p(95)<5000'],
+});
 
-const testData = loadJsonData('fashion-mnist-samples', '../../../../data/fashion-mnist.json');
+export function testHealth() {
+  group('fashion-health', () => {
+    let res = http.get(`${MODEL_URL}/health`, { tags: { name: 'fashion-health' } });
+    checkHealth(res, 'fashion-health');
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`📈 Spike Test: ${MODEL_NAME
-  }`);
-  console.log(`📍 Base URL: ${BASE_URL
-  }`);
-  console.log(`⏰ Started: ${new Date().toISOString()
-  }`);
-  console.log('='.repeat(60));
+    res = http.get(`${MODEL_URL}/info`, { tags: { name: 'fashion-info' } });
+    checkJsonField(res, 'fashion-info', 'model_name');
+  });
+  sleep(0.5);
+}
+
+export function testPredict() {
+  group('fashion-predict', () => {
+    const sample = randomSample(MNIST_DATA);
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'fashion-predict' },
+    });
+    checkPrediction(res, 'fashion-predict');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  if (testData.length === 0) return;
-
-  const sample = randomSample(testData);
-  const payload = { images: [sample
-    ]
-  };
-
-  postJson(`${BASE_URL
-  }${ENDPOINTS.predict
-  }`, payload, `${MODEL_NAME
-  }-predict`);
-
-  sleep(0.01); // Minimal pause during spike
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Spike test completed for ${MODEL_NAME
-  }`);
-  console.log('='.repeat(60));
+  testHealth();
+  testPredict();
 }

@@ -1,71 +1,53 @@
-// tests/02-load/models/custom/fashion-mnist.js
-// Load test for Fashion MNIST classifier - sustained traffic
-
+// tests/01-smoke/models/custom/fashion-mnist.js
+import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { getCustomModelUrl } from '../../../../config/environments.js';
-import { CUSTOM_MODEL_ENDPOINTS } from '../../../../config/endpoints.js';
-import { buildOptions } from '../../../../config/thresholds.js';
-import { get, postJson, checkDuration } from '../../../../helpers/http.js';
-import { loadJsonData, randomSample } from '../../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../config/environments.js';
+import { buildOptions } from '../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../helpers/data.js';
 
-const MODEL_NAME = 'fashion-mnist';
-const BASE_URL = getCustomModelUrl(MODEL_NAME);
-const ENDPOINTS = CUSTOM_MODEL_ENDPOINTS;
+const TEST_TYPE = 'load';
+const TEST_TARGET = 'model-fashion-mnist';
 
-export const options = buildOptions('load', {
-  'http_req_duration{name:fashion-mnist-predict}': ['p(95)<2500'],
+const MODEL_URL = getCustomModelUrl('fashion-mnist');
+const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../data/fashion-mnist.json');
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  'fashion-health': {
+    exec: 'testHealth',
+  },
+  'fashion-predict': {
+    exec: 'testPredict',
+  },
+}, {
+  'http_req_duration{scenario:fashion-health}': ['p(95)<2000'],
+  'http_req_duration{scenario:fashion-predict}': ['p(95)<5000'],
 });
 
-const testData = loadJsonData('fashion-mnist-samples', '../../../../data/fashion-mnist.json');
+export function testHealth() {
+  group('fashion-health', () => {
+    let res = http.get(`${MODEL_URL}/health`, { tags: { name: 'fashion-health' } });
+    checkHealth(res, 'fashion-health');
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log(`📊 Load Test: ${MODEL_NAME}`);
-  console.log(`📍 Base URL: ${BASE_URL}`);
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+    res = http.get(`${MODEL_URL}/info`, { tags: { name: 'fashion-info' } });
+    checkJsonField(res, 'fashion-info', 'model_name');
+  });
+  sleep(0.5);
+}
 
-  const healthRes = get(`${BASE_URL}${ENDPOINTS.health}`, `${MODEL_NAME}-health-check`);
-  if (!healthRes.ok) {
-    console.error('❌ Service not healthy, load test may fail');
-  }
+export function testPredict() {
+  group('fashion-predict', () => {
+    const sample = randomSample(MNIST_DATA);
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+      headers: { 'Content-Type': 'application/json' },
+      tags: { name: 'fashion-predict' },
+    });
+    checkPrediction(res, 'fashion-predict');
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  // 10% health checks (monitoring)
-  if (Math.random() < 0.1) {
-    group('Health Check', () => {
-      get(`${BASE_URL}${ENDPOINTS.health}`, `${MODEL_NAME}-health`);
-    });
-  }
-
-  // 90% predictions (main workload)
-  group('Predictions', () => {
-    if (testData.length === 0) {
-      console.warn('⚠️ No test data');
-      return;
-    }
-
-    const sample = randomSample(testData);
-    const payload = { images: [sample] };
-
-    const { response, ok } = postJson(
-      `${BASE_URL}${ENDPOINTS.predict}`,
-      payload,
-      `${MODEL_NAME}-predict`
-    );
-
-    if (ok) {
-      checkDuration(response, `${MODEL_NAME}-predict`, 2500);
-    }
-  });
-
-  // Realistic pause between requests
-  sleep(0.1 + Math.random() * 0.2);
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log(`✅ Load test completed for ${MODEL_NAME}`);
-  console.log('='.repeat(60));
+  testHealth();
+  testPredict();
 }

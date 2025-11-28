@@ -1,24 +1,37 @@
-// tests/06-breakpoint/platform/observability.js
+// tests/01-smoke/platform/observability.js
+import http from 'k6/http';
+import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';
-import { PLATFORM_ENDPOINTS } from '../../../config/endpoints.js';
 import { buildOptions } from '../../../config/thresholds.js';
-import { get } from '../../../helpers/http.js';
+import { checkHealth, checkStatus, checkJsonField } from '../../../helpers/checks.js';
 
-export const options = buildOptions('breakpoint');
+const TEST_TYPE = 'breakpoint';
+const TEST_TARGET = 'platform-obs';
 
-export function setup() {
-  console.log('='.repeat(60));
-  console.log('🔥 Breakpoint Test: Observability Services');
-  console.log(`⏰ Started: ${new Date().toISOString()}`);
-  console.log('='.repeat(60));
+const GRAFANA = ENV.platform.observability.grafana;
+
+export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
+  grafana: {
+    exec: 'testGrafana',
+  },
+}, {
+  'http_req_duration{scenario:grafana}': ['p(95)<2000'],
+});
+
+export function testGrafana() {
+  group('grafana', () => {
+    // Health API
+    let res = http.get(`${GRAFANA}/api/health`, { tags: { name: 'grafana-health' } });
+    checkHealth(res, 'grafana-health');
+    checkJsonField(res, 'grafana-health', 'database');
+
+    // Root
+    res = http.get(`${GRAFANA}/`, { tags: { name: 'grafana-root' } });
+    checkStatus(res, 'grafana-root', 200);
+  });
+  sleep(0.5);
 }
 
 export default function () {
-  get(`${ENV.platform.observability.grafana}${PLATFORM_ENDPOINTS.grafana.health}`, 'grafana-health');
-}
-
-export function teardown() {
-  console.log('='.repeat(60));
-  console.log('✅ Observability breakpoint test completed');
-  console.log('='.repeat(60));
+  testGrafana();
 }
