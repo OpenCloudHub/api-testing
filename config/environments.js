@@ -4,6 +4,10 @@
 const TEST_ENV = __ENV.TEST_ENV || 'dev';
 
 const ENVIRONMENTS = {
+  // ===========================================================================
+  // DEV - External HTTPS routes (validates full user path)
+  // Used for both local testing and in-cluster k6-operator runs
+  // ===========================================================================
   dev: {
     insecureSkipTLSVerify: true,
 
@@ -28,7 +32,7 @@ const ENVIRONMENTS = {
       },
     },
 
-    // Platform services - internal subdomains
+    // Platform services - external subdomains
     platform: {
       mlops: {
         mlflow: 'https://mlflow.internal.opencloudhub.org',
@@ -50,6 +54,56 @@ const ENVIRONMENTS = {
     // Team applications
     apps: {
       'demo-backend': 'https://demo-app.opencloudhub.org',
+    },
+  },
+
+  // ===========================================================================
+  // INTERNAL - Direct service DNS (for testing services without ingress)
+  // Use when you want to bypass gateway and test services directly
+  // ===========================================================================
+  internal: {
+    insecureSkipTLSVerify: true,
+
+    models: {
+      api: 'http://istio-ingressgateway.istio-ingress.svc.cluster.local',
+      custom: {
+        'fashion-mnist': {
+          path: '/models/custom/fashion-mnist-classifier',
+          dashboard: null,
+        },
+        wine: {
+          path: '/models/custom/wine-classifier',
+          dashboard: null,
+        },
+      },
+      base: {
+        'qwen-0.5b': {
+          path: '/models/base/qwen-0.5b/v1',
+          dashboard: null,
+        },
+      },
+    },
+
+    platform: {
+      mlops: {
+        mlflow: 'http://mlflow.mlops.svc.cluster.local:5000',
+        'argo-workflows': 'http://argo-workflows-server.mlops.svc.cluster.local:2746',
+      },
+      gitops: {
+        argocd: 'http://argocd-server.argocd.svc.cluster.local',
+      },
+      infrastructure: {
+        'minio-console': 'http://minio-console.minio-tenant.svc.cluster.local:9090',
+        'minio-api': 'http://minio.minio-tenant.svc.cluster.local:9000',
+        pgadmin: 'http://pgadmin.storage.svc.cluster.local',
+      },
+      observability: {
+        grafana: 'http://grafana.observability.svc.cluster.local:3000',
+      },
+    },
+
+    apps: {
+      'demo-backend': 'http://demo-app-backend.demo-app.svc.cluster.local:8000',
     },
   },
 };
