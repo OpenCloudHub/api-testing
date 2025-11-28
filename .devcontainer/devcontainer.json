@@ -1,0 +1,57 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/alpine
+{
+	"name": "OpenCloudHub - k6 Test Dev Container",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"image": "mcr.microsoft.com/devcontainers/base:alpine-3.20",
+	"features": {
+		"ghcr.io/grafana/devcontainer-features/k6:1": {}
+	},
+	"runArgs": [
+		"--network=host"
+	],
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "uname -a",
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// Code completion and AI
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				// Code formatting and linting
+				"ms-azuretools.vscode-docker",
+				"ms-vscode.makefile-tools",
+				"nhoizey.gremlins",
+				"yzhang.markdown-all-in-one",
+				"k6.k6",
+				// Project management
+				"Gruntfuggly.todo-tree",
+				"eamodio.gitlens",
+				// Visuals
+				"oderwat.indent-rainbow"
+			],
+			"settings": {
+				"editor.tabSize": 2,
+				"editor.autoIndent": "advanced",
+				"editor.formatOnPaste": true,
+				"editor.formatOnSave": true,
+				"github.copilot.nextEditSuggestions.enabled": true,
+				// Intent rainbow
+				"indentRainbow.indicatorStyle": "light",
+				"indentRainbow.lightIndicatorStyleLineWidth": 1,
+				"indentRainbow.colors": [
+					"rgba(255,255,64,0.3)",
+					"rgba(127,255,127,0.3)",
+					"rgba(255,127,255,0.3)",
+					"rgba(79,236,236,0.3)"
+				],
+				// The indent color if the number of spaces is not a multiple of "tabSize".
+				"indentRainbow.errorColor": "rgba(128,32,32,0.6)"
+			}
+		}
+	},
+	"remoteUser": "vscode"
+}

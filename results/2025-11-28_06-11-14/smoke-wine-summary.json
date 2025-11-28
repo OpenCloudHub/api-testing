@@ -1,0 +1,208 @@
+{
+    "root_group": {
+        "groups": {
+            "Root Endpoint": {
+                "path": "::Root Endpoint",
+                "id": "f574743a542bb4a2a0752436b23c2c32",
+                "groups": {},
+                "checks": {
+                        "wine-root status OK": {
+                            "name": "wine-root status OK",
+                            "path": "::Root Endpoint::wine-root status OK",
+                            "id": "3b53b7f97765fb87ea519a2f4942c3bb",
+                            "passes": 0,
+                            "fails": 2900
+                        }
+                    },
+                "name": "Root Endpoint"
+            },
+            "Health Endpoint": {
+                "name": "Health Endpoint",
+                "path": "::Health Endpoint",
+                "id": "1769ae11fd5487a0f0c5c5d493aee501",
+                "groups": {},
+                "checks": {
+                        "wine-health responds": {
+                            "passes": 2900,
+                            "fails": 0,
+                            "name": "wine-health responds",
+                            "path": "::Health Endpoint::wine-health responds",
+                            "id": "62a7d7f11f24adf95b0cd4bcfa2bc84b"
+                        },
+                        "wine-health healthy": {
+                            "fails": 2900,
+                            "name": "wine-health healthy",
+                            "path": "::Health Endpoint::wine-health healthy",
+                            "id": "c729fc6d18e2b7b286071dbc61f477c8",
+                            "passes": 0
+                        }
+                    }
+            },
+            "Info Endpoint": {
+                "name": "Info Endpoint",
+                "path": "::Info Endpoint",
+                "id": "c05a074dcf37fdba10342edd2a796c2c",
+                "groups": {},
+                "checks": {
+                        "wine-info status OK": {
+                            "fails": 2900,
+                            "name": "wine-info status OK",
+                            "path": "::Info Endpoint::wine-info status OK",
+                            "id": "dfc3530a1aacfd3782e553073ac3d5d6",
+                            "passes": 0
+                        }
+                    }
+            },
+            "Predict Endpoint": {
+                "groups": {},
+                "checks": {
+                        "wine-predict status OK": {
+                            "passes": 0,
+                            "fails": 2900,
+                            "name": "wine-predict status OK",
+                            "path": "::Predict Endpoint::wine-predict status OK",
+                            "id": "77c33a455393937e6e3ce391e745434f"
+                        }
+                    },
+                "name": "Predict Endpoint",
+                "path": "::Predict Endpoint",
+                "id": "73b2b02601cf955c40c22b25b575d23e"
+            }
+        },
+        "checks": {},
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "metrics": {
+        "iterations": {
+            "count": 2900,
+            "rate": 289.7977514533506
+        },
+        "http_req_sending": {
+            "min": 0,
+            "med": 0.1373165,
+            "max": 2.334221,
+            "p(90)": 0.23488980000000004,
+            "p(95)": 0.26688485,
+            "p(99)": 0.35070591000000007,
+            "avg": 0.14479852517241365
+        },
+        "http_req_receiving": {
+            "avg": 0.04702562241379328,
+            "min": 0.01741,
+            "med": 0.0437995,
+            "max": 0.719417,
+            "p(90)": 0.0686457,
+            "p(95)": 0.07867719999999999,
+            "p(99)": 0.1108247700000001
+        },
+        "vus_max": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "http_reqs": {
+            "count": 11600,
+            "rate": 1159.1910058134024
+        },
+        "http_req_failed": {
+            "passes": 11600,
+            "fails": 0,
+            "thresholds": {
+                "rate<0.10": true
+            },
+            "value": 1
+        },
+        "http_req_connecting": {
+            "avg": 0.000056128706896551727,
+            "min": 0,
+            "med": 0,
+            "max": 0.651093,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0
+        },
+        "data_sent": {
+            "count": 743584,
+            "rate": 74306.54179885802
+        },
+        "http_req_waiting": {
+            "max": 1.996499,
+            "p(90)": 0.6997964,
+            "p(95)": 0.76524215,
+            "p(99)": 0.90692119,
+            "avg": 0.4279897577586182,
+            "min": 0,
+            "med": 0.38500100000000004
+        },
+        "checks": {
+            "passes": 2900,
+            "fails": 11600,
+            "thresholds": {
+                "rate>0.90": true
+            },
+            "value": 0.2
+        },
+        "http_req_blocked": {
+            "avg": 0.001586624741379301,
+            "min": 0.00023,
+            "med": 0.000836,
+            "max": 8.385385,
+            "p(90)": 0.0010801000000000003,
+            "p(95)": 0.00117,
+            "p(99)": 0.001375
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "avg": 0.0006292779310344827,
+            "min": 0,
+            "med": 0,
+            "max": 7.299624
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "data_received": {
+            "count": 409551,
+            "rate": 40926.53755361076
+        },
+        "group_duration": {
+            "p(95)": 1.37795775,
+            "p(99)": 1.7424198900000003,
+            "avg": 0.8335012931896544,
+            "min": 0.284701,
+            "med": 0.782545,
+            "max": 10.381956,
+            "p(90)": 1.2434076000000003
+        },
+        "iteration_duration": {
+            "p(95)": 5.096278649999999,
+            "p(99)": 5.968507489999999,
+            "avg": 3.428956304482761,
+            "min": 1.559257,
+            "med": 3.357743,
+            "max": 13.738686,
+            "p(90)": 4.732212499999999
+        },
+        "http_req_duration": {
+            "p(99)": 1.2624317600000003,
+            "avg": 0.6198139053448285,
+            "min": 0.038817,
+            "med": 0.5759995,
+            "max": 3.559596,
+            "p(90)": 0.9565325,
+            "p(95)": 1.0538766499999994,
+            "thresholds": {
+                "p(95)<3000": false
+            }
+        }
+    },
+    "setup_data": {
+        "baseUrl": "https://api.opencloudhub.org/models/custom/wine-classifier"
+    }
+}

@@ -1,0 +1,204 @@
+{
+    "metrics": {
+        "http_req_tls_handshaking": {
+            "med": 0,
+            "max": 3.839721,
+            "p(90)": 0,
+            "p(95)": 0,
+            "p(99)": 0,
+            "avg": 0.0009480792592592592,
+            "min": 0
+        },
+        "group_duration": {
+            "max": 17.533365,
+            "p(90)": 9.1898675,
+            "p(95)": 9.68107665,
+            "p(99)": 10.880115380000001,
+            "avg": 7.353540057037027,
+            "min": 1.718989,
+            "med": 7.8578665
+        },
+        "iteration_duration": {
+            "avg": 7.389983167407399,
+            "min": 1.728053,
+            "med": 7.9014945,
+            "max": 17.619778,
+            "p(90)": 9.227039900000001,
+            "p(95)": 9.722342,
+            "p(99)": 10.9302279
+        },
+        "http_req_receiving": {
+            "max": 0.810407,
+            "p(90)": 0.12312379999999999,
+            "p(95)": 0.1635688,
+            "p(99)": 0.2605093599999993,
+            "avg": 0.08526153012345657,
+            "min": 0.010445,
+            "med": 0.079987
+        },
+        "data_sent": {
+            "count": 156441,
+            "rate": 15624.430765034249
+        },
+        "http_req_blocked": {
+            "p(99)": 0.0014120599999999986,
+            "avg": 0.0020311851851851867,
+            "min": 0.000142,
+            "med": 0.000871,
+            "max": 4.58995,
+            "p(90)": 0.001146,
+            "p(95)": 0.0012165499999999998
+        },
+        "http_req_waiting": {
+            "max": 7.946581,
+            "p(90)": 3.3631048999999997,
+            "p(95)": 3.57795775,
+            "p(99)": 3.9694283199999987,
+            "avg": 1.9502089449382667,
+            "min": 0.248371,
+            "med": 1.6866045
+        },
+        "iterations": {
+            "count": 1350,
+            "rate": 134.830265293601
+        },
+        "vus": {
+            "value": 1,
+            "min": 1,
+            "max": 1
+        },
+        "checks": {
+            "passes": 9450,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.90": false
+            },
+            "value": 1
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 4050,
+            "thresholds": {
+                "rate<0.10": false
+            },
+            "value": 0
+        },
+        "vus_max": {
+            "min": 1,
+            "max": 1,
+            "value": 1
+        },
+        "http_reqs": {
+            "count": 4050,
+            "rate": 404.49079588080303
+        },
+        "http_req_connecting": {
+            "p(99)": 0,
+            "avg": 0.00010922493827160494,
+            "min": 0,
+            "med": 0,
+            "max": 0.442361,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "data_received": {
+            "count": 1339478,
+            "rate": 133779.38821847562
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 3.6278389,
+            "p(95)": 3.8721139499999984,
+            "p(99)": 4.295683859999997,
+            "avg": 2.186630506666664,
+            "min": 0.29051,
+            "med": 1.9472559999999999,
+            "max": 8.199104
+        },
+        "http_req_sending": {
+            "p(90)": 0.208392,
+            "p(95)": 0.22386345,
+            "p(99)": 0.2708925599999996,
+            "avg": 0.1511600316049382,
+            "min": 0.019612,
+            "med": 0.1558945,
+            "max": 0.989898
+        },
+        "http_req_duration": {
+            "avg": 2.186630506666664,
+            "min": 0.29051,
+            "med": 1.9472559999999999,
+            "max": 8.199104,
+            "p(90)": 3.6278389,
+            "p(95)": 3.8721139499999984,
+            "p(99)": 4.295683859999997,
+            "thresholds": {
+                "p(95)<3000": false
+            }
+        }
+    },
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "ArgoCD": {
+                "groups": {},
+                "checks": {
+                        "argocd-root responds": {
+                            "id": "0cef8a35964df3156ce58bff0a5b2a2a",
+                            "passes": 1350,
+                            "fails": 0,
+                            "name": "argocd-root responds",
+                            "path": "::ArgoCD::argocd-root responds"
+                        },
+                        "argocd-root healthy": {
+                            "fails": 0,
+                            "name": "argocd-root healthy",
+                            "path": "::ArgoCD::argocd-root healthy",
+                            "id": "3199a623e8b0bbe05cdb38b38cb170a2",
+                            "passes": 1350
+                        },
+                        "argocd-root duration < 2000ms": {
+                            "name": "argocd-root duration < 2000ms",
+                            "path": "::ArgoCD::argocd-root duration < 2000ms",
+                            "id": "69e4ee86767712f80429f1d904c5fc2a",
+                            "passes": 1350,
+                            "fails": 0
+                        },
+                        "argocd-health status OK": {
+                            "fails": 0,
+                            "name": "argocd-health status OK",
+                            "path": "::ArgoCD::argocd-health status OK",
+                            "id": "19d66d42a06d57b711189e39f78c00b7",
+                            "passes": 1350
+                        },
+                        "argocd-health duration < 2000ms": {
+                            "fails": 0,
+                            "name": "argocd-health duration < 2000ms",
+                            "path": "::ArgoCD::argocd-health duration < 2000ms",
+                            "id": "e2c3151206195bc921e46745e4d2212f",
+                            "passes": 1350
+                        },
+                        "argocd-version status OK": {
+                            "id": "98ff168e10da938e6e113d954f89e2f2",
+                            "passes": 1350,
+                            "fails": 0,
+                            "name": "argocd-version status OK",
+                            "path": "::ArgoCD::argocd-version status OK"
+                        },
+                        "argocd-version duration < 2000ms": {
+                            "path": "::ArgoCD::argocd-version duration < 2000ms",
+                            "id": "8fda9292ecd5506f6f4a911a52dfb729",
+                            "passes": 1350,
+                            "fails": 0,
+                            "name": "argocd-version duration < 2000ms"
+                        }
+                    },
+                "name": "ArgoCD",
+                "path": "::ArgoCD",
+                "id": "4bbc64d7edadc6e25dbce6c5ec54682e"
+            }
+        },
+        "checks": {},
+        "name": ""
+    }
+}

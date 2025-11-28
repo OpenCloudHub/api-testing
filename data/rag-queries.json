@@ -1,0 +1,12 @@
+[
+  {"question": "What is OpenCloudHub?"},
+  {"question": "How does ArgoCD work in the platform?"},
+  {"question": "What is MLflow used for?"},
+  {"question": "How do I deploy a model?"},
+  {"question": "What is GitOps?"},
+  {"question": "How does the RAG system work?"},
+  {"question": "What databases are used?"},
+  {"question": "How do I version prompts?"},
+  {"question": "What is Ray Serve?"},
+  {"question": "How do I monitor my models?"}
+]

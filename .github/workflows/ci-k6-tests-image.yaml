@@ -1,0 +1,27 @@
+# .github/workflows/ci-k6-tests-image.yaml
+name: CI Build K6 Tests Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - config/**
+      - helpers/**
+      - tests/**
+      - data/**
+      - .github/workflows/ci-k6-tests-image.yaml
+  workflow_dispatch:
+
+jobs:
+  build-image:
+    name: 🐳 Build K6 Tests Image
+    uses: opencloudhub/.github/.github/workflows/shared-ci-docker-build-push.yaml@main
+    with:
+      repo-name: "k6-tests"
+      context: "."
+      dockerfile: "Dockerfile"
+      push-on-pr: true
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
