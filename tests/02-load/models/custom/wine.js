@@ -1,16 +1,16 @@
 // tests/01-smoke/models/custom/wine.js
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getCustomModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
-import { loadJsonData, randomSample } from '../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../../helpers/data.js';
 
 const TEST_TYPE = 'load';
 const TEST_TARGET = 'model-wine';
 
 const MODEL_URL = getCustomModelUrl('wine');
-const WINE_DATA = loadJsonData('wine-samples', '../../../data/wine.json');
+const WINE_DATA = loadJsonData('wine-samples', '../../../../data/wine.json');
 
 export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
   'wine-health': {

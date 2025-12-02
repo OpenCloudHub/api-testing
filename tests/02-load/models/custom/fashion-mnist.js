@@ -1,16 +1,16 @@
 // tests/01-smoke/models/custom/fashion-mnist.js
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getCustomModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
-import { loadJsonData, randomSample } from '../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../../helpers/data.js';
 
 const TEST_TYPE = 'load';
 const TEST_TARGET = 'model-fashion-mnist';
 
 const MODEL_URL = getCustomModelUrl('fashion-mnist');
-const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../data/fashion-mnist.json');
+const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../../data/fashion-mnist.json');
 
 export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
   'fashion-health': {
