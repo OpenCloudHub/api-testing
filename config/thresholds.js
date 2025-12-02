@@ -54,13 +54,13 @@ export const LOAD_PROFILES = {
   stress: {
     executor: 'ramping-vus',
     stages: [
-      { duration: '1m', target: 5 },
-      { duration: '2m', target: 10 },
-      { duration: '2m', target: 15 },
-      { duration: '2m', target: 20 },
-      { duration: '2m', target: 25 },
-      { duration: '2m', target: 15 },
-      { duration: '1m', target: 5 },
+      { duration: '1m', target: 5 },    // Baseline
+      { duration: '3m', target: 10 },   // Slow climb
+      { duration: '3m', target: 10 },   // HOLD
+      { duration: '3m', target: 20 },   // Push
+      { duration: '3m', target: 20 },   // HOLD
+      { duration: '3m', target: 5 },    // Drop
+      { duration: '2m', target: 5 },    // HOLD
     ],
   },
   spike: {
