@@ -1,9 +1,9 @@
 // tests/01-smoke/models/base/qwen.js
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getBaseModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkCompletion, checkJsonField } from '../../../helpers/checks.js';
+import { ENV, getBaseModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkCompletion, checkJsonField } from '../../../../helpers/checks.js';
 
 const TEST_TYPE = 'spike';
 const TEST_TARGET = 'model-qwen';
