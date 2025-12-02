@@ -55,7 +55,7 @@ export const LOAD_PROFILES = {
     executor: 'ramping-vus',
     stages: [
       { duration: '1m', target: 5 },
-      { duration: '2m', target: 15 },
+      { duration: '2m', target: 10 },
       { duration: '2m', target: 25 },
       { duration: '2m', target: 25 },
       { duration: '2m', target: 10 },
