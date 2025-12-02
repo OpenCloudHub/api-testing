@@ -38,7 +38,8 @@ export function testHealth() {
 export function testPredict() {
   group('fashion-predict', () => {
     const sample = randomSample(MNIST_DATA);
-    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+    const payload = { images: [sample] };  // API expects {"images": [[...pixels...]]}
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(payload), {
       headers: { 'Content-Type': 'application/json' },
       tags: { name: 'fashion-predict' },
     });
@@ -46,7 +47,6 @@ export function testPredict() {
   });
   sleep(0.5);
 }
-
 export default function () {
   testHealth();
   testPredict();
