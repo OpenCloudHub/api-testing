@@ -1,4 +1,26 @@
-// tests/01-smoke/platform/gitops.js
+// =============================================================================
+// Smoke Test: GitOps Platform Services
+// =============================================================================
+//
+// Quick health validation for GitOps platform services.
+// Tests ArgoCD for deployment management.
+//
+// Services Tested
+// ---------------
+// 1. ArgoCD
+//    - Purpose: GitOps-based continuous deployment
+//    - Endpoints: /healthz, /, /api/version
+//
+// Run Command
+// -----------
+// make smoke-gitops
+//
+// Expected Thresholds
+// -------------------
+// - All endpoints: p(95) < 2000ms
+// - Error rate: < 10%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';

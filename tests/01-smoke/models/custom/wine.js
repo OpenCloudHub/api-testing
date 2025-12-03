@@ -1,4 +1,33 @@
-// tests/01-smoke/models/custom/wine.js
+// =============================================================================
+// Smoke Test: Wine Quality Classifier
+// =============================================================================
+//
+// Quick health validation for the Wine quality classification model.
+// Tests basic functionality without heavy load.
+//
+// Model Details
+// -------------
+// - Type      : Custom FastAPI model served via Ray Serve
+// - Input     : 13 chemical features (alcohol, malic acid, ash, etc.)
+// - Output    : Wine class prediction (0, 1, or 2)
+// - Endpoint  : /models/custom/wine-classifier
+//
+// Test Scenarios
+// --------------
+// 1. wine-health  : Validates /health and /info endpoints
+// 2. wine-predict : Sends wine features and validates prediction response
+//
+// Run Command
+// -----------
+// make smoke-wine
+//
+// Expected Thresholds
+// -------------------
+// - Health: p(95) < 2000ms
+// - Predict: p(95) < 3000ms
+// - Error rate: < 10%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

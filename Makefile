@@ -1,24 +1,73 @@
-# k6-tests/Makefile
-# Test orchestration for k6 performance tests with Grafana-compatible tagging
+# =============================================================================
+# K6 Test Suite Makefile
+# =============================================================================
+#
+# Test orchestration for k6 performance tests with Grafana-compatible tagging.
+# Provides standardized commands for running different test types across
+# all platform services and ML models.
+#
+# Test Types
+# ----------
+# - smoke      : Quick health validation (1 VU, 10s)
+# - load       : Normal traffic simulation (5-10 VUs, ~9min)
+# - stress     : Beyond normal capacity (5-20 VUs, ~18min)
+# - spike      : Sudden traffic bursts (3-25 VUs, ~2.5min)
+# - soak       : Extended duration (5 VUs, 34min)
+# - breakpoint : Increasing load until failure (10-100 req/s, ~10min)
+#
+# Quick Start
+# -----------
+#   make help            # Show all available targets
+#   make smoke           # Run all smoke tests
+#   make smoke-fashion-mnist  # Run specific test
+#   TEST_ENV=internal make smoke  # Use different environment
+#
+# Output
+# ------
+# Results are saved to results/<timestamp>/ with:
+# - <test-type>-<target>.json         : Full k6 output
+# - <test-type>-<target>-summary.json : Aggregated metrics
+#
+# Grafana Integration
+# -------------------
+# All tests are tagged for Grafana filtering:
+# - testid      : Unique timestamp for each run
+# - test_type   : smoke, load, stress, spike, soak, breakpoint
+# - test_target : Service identifier (e.g., platform-mlops, model-wine)
+#
+# See Also
+# --------
+# - README.md             : Full documentation
+# - config/thresholds.js  : Load profiles and thresholds
+# - config/environments.js: Service URLs per environment
+# =============================================================================
 
+# -----------------------------------------------------------------------------
+# Configuration Variables
+# -----------------------------------------------------------------------------
+# TEST_ENV: Target environment (dev, internal). Override with: TEST_ENV=internal make smoke
 TEST_ENV ?= dev
 RESULTS_DIR := results
 TIMESTAMP := $(shell date +%Y%m%d-%H%M%S)
 RUN_DIR := $(RESULTS_DIR)/$(TIMESTAMP)
 
-# Base k6 command
+# Base k6 command with TLS skip for self-signed certs
 K6 := k6 run --insecure-skip-tls-verify -e TEST_ENV=$(TEST_ENV)
 
-# Colors
+# Terminal colors for output formatting
 GREEN := \033[0;32m
 CYAN := \033[0;36m
 YELLOW := \033[0;33m
 NC := \033[0m
 
+# Create timestamped results directory
 $(RUN_DIR):
 	@mkdir -p $(RUN_DIR)
 
-# Generic test runner with tagging
+# -----------------------------------------------------------------------------
+# Generic Test Runner Macro
+# -----------------------------------------------------------------------------
+# Standardized test execution with tagging and output configuration.
 # Usage: $(call run_k6,<test_type>,<test_target>,<script_path>)
 define run_k6
 	@echo ""

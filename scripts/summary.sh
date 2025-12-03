@@ -1,6 +1,39 @@
 #!/bin/bash
-# Aggregate k6 test results into a summary table
+# =============================================================================
+# K6 Test Results Summary Script
+# =============================================================================
+#
+# Aggregates k6 test results into a formatted summary table.
+# Parses summary JSON files to display key metrics at a glance.
+#
+# Usage
+# -----
+#   ./scripts/summary.sh <results-directory>
+#   make summary  # Runs on latest results directory
+#
+# Output Columns
+# --------------
+# - TEST     : Test name (derived from filename)
+# - STATUS   : PASS (≥90%), WARN (≥70%), FAIL (<70%)
+# - REQUESTS : Total HTTP requests made
+# - FAILED   : Number of failed requests
+# - P95(ms)  : 95th percentile response time
+# - CHECKS   : Percentage of passed checks
+#
+# Requirements
+# ------------
+# - jq : JSON processor (install: apt install jq / brew install jq)
+# - bc : Calculator for percentage computation
+#
+# Example Output
+# --------------
+#   TEST                              STATUS   REQUESTS    FAILED    P95(ms)   CHECKS
+#   smoke-platform-mlops              ✅ PASS        24         0        156    100.0%
+#   smoke-model-fashion-mnist         ⚠️ WARN        12         2        892     83.3%
+#
+# =============================================================================
 
+# Get results directory from argument or current directory
 RESULTS_DIR="${1:-.}"
 
 if [ ! -d "$RESULTS_DIR" ]; then

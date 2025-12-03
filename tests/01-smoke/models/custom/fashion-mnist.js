@@ -1,4 +1,33 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Smoke Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Quick health validation for the Fashion MNIST image classification model.
+// Tests basic functionality without heavy load.
+//
+// Model Details
+// -------------
+// - Type      : Custom FastAPI model served via Ray Serve
+// - Input     : 28x28 grayscale image (784 pixel values, 0-255)
+// - Output    : Class prediction (0-9: T-shirt, Trouser, Pullover, etc.)
+// - Endpoint  : /models/custom/fashion-mnist-classifier
+//
+// Test Scenarios
+// --------------
+// 1. fashion-health : Validates /health and /info endpoints
+// 2. fashion-predict: Sends actual image data and validates prediction response
+//
+// Run Command
+// -----------
+// make smoke-fashion-mnist
+//
+// Expected Thresholds
+// -------------------
+// - Health: p(95) < 2000ms
+// - Predict: p(95) < 5000ms
+// - Error rate: < 10%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

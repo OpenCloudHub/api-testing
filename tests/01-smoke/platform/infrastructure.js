@@ -1,4 +1,35 @@
-// tests/01-smoke/platform/infrastructure.js
+// =============================================================================
+// Smoke Test: Infrastructure Platform Services
+// =============================================================================
+//
+// Quick health validation for infrastructure services:
+// MinIO (object storage) and pgAdmin (database administration).
+//
+// Services Tested
+// ---------------
+// 1. MinIO Console
+//    - Purpose: Object storage web interface
+//    - Endpoints: /
+//
+// 2. MinIO API
+//    - Purpose: S3-compatible object storage API
+//    - Endpoints: /minio/health/live
+//
+// 3. pgAdmin
+//    - Purpose: PostgreSQL database administration
+//    - Endpoints: / (may redirect to login)
+//
+// Run Command
+// -----------
+// make smoke-infra
+//
+// Expected Thresholds
+// -------------------
+// - MinIO: p(95) < 2000ms
+// - pgAdmin: p(95) < 3000ms
+// - Error rate: < 10%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';

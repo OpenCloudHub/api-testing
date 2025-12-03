@@ -1,4 +1,30 @@
-// tests/01-smoke/platform/mlops.js
+// =============================================================================
+// Smoke Test: MLOps Platform Services
+// =============================================================================
+//
+// Quick health validation for MLOps platform services:
+// MLflow (experiment tracking) and Argo Workflows (pipeline orchestration).
+//
+// Services Tested
+// ---------------
+// 1. MLflow
+//    - Purpose: ML experiment tracking, model registry
+//    - Endpoints: /health, /, /api/2.0/mlflow/experiments/search
+//
+// 2. Argo Workflows
+//    - Purpose: Workflow orchestration for ML pipelines
+//    - Endpoints: /api/v1/info, /
+//
+// Run Command
+// -----------
+// make smoke-mlops
+//
+// Expected Thresholds
+// -------------------
+// - All endpoints: p(95) < 2000ms
+// - Error rate: < 10%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';

@@ -1,4 +1,39 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Load Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Normal traffic simulation for the Fashion MNIST image classification model.
+// Tests sustained load with multiple virtual users.
+//
+// Load Profile
+// ------------
+// - Duration : ~9 minutes
+// - VUs      : Ramps 0 → 5 → 10 → 0
+// - Pattern  : Ramp up, steady state, increase, steady state, ramp down
+//
+// Model Details
+// -------------
+// - Type      : Custom FastAPI model served via Ray Serve
+// - Input     : 28x28 grayscale image (784 pixel values)
+// - Output    : Class prediction (0-9)
+// - Endpoint  : /models/custom/fashion-mnist-classifier
+//
+// Test Scenarios
+// --------------
+// 1. fashion-health  : Health check requests (lighter load)
+// 2. fashion-predict : Prediction requests with real image data
+//
+// Run Command
+// -----------
+// make load-fashion-mnist
+//
+// Expected Thresholds
+// -------------------
+// - Health: p(95) < 2000ms
+// - Predict: p(95) < 5000ms
+// - Error rate: < 5%
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

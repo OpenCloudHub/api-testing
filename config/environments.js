@@ -1,6 +1,40 @@
-// config/environments.js
-// Base URLs organized by service category
+// =============================================================================
+// Environment Configuration
+// =============================================================================
+//
+// Defines base URLs for all services organized by environment and category.
+// Supports multiple deployment targets: external routes (dev) and internal
+// Kubernetes service DNS (internal/cluster).
+//
+// Environments
+// ------------
+// - dev      : External HTTPS routes through ingress (default)
+// - internal : Direct Kubernetes service DNS (for in-cluster testing)
+//
+// Service Categories
+// ------------------
+// - models.custom       : Custom ML models (fashion-mnist, wine)
+// - models.base         : Base LLM models (qwen-0.5b)
+// - platform.mlops      : MLflow, Argo Workflows
+// - platform.gitops     : ArgoCD
+// - platform.infra      : MinIO, pgAdmin
+// - platform.obs        : Grafana
+// - apps                : Demo applications
+//
+// Usage
+// -----
+// Set environment via CLI: k6 run -e TEST_ENV=internal script.js
+// Access in tests:
+//   import { ENV, getCustomModelUrl } from '../config/environments.js';
+//   const mlflowUrl = ENV.platform.mlops.mlflow;
+//
+// See Also
+// --------
+// - config/endpoints.js  : Endpoint path patterns
+// - config/thresholds.js : Performance thresholds
+// =============================================================================
 
+// Get target environment from k6 CLI argument (defaults to 'dev')
 const TEST_ENV = __ENV.TEST_ENV || 'dev';
 
 const ENVIRONMENTS = {

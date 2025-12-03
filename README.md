@@ -26,112 +26,144 @@ ______________________________________________________________________
   <summary>📑 Table of Contents</summary>
   <ol>
     <li><a href="#about">About</a></li>
+    <li><a href="#thesis-context">Thesis Context</a></li>
     <li><a href="#features">Features</a></li>
-    <li><a href="#test-types">Test Types</a></li>
+    <li><a href="#architecture">Architecture</a></li>
     <li><a href="#getting-started">Getting Started</a></li>
-    <li><a href="#running-tests">Running Tests</a></li>
-    <li><a href="#kubernetes-testing">Running Tests in Kubernetes</a></li>
-    <li><a href="#project-structure">Project Structure</a></li>
-    <li><a href="#service-categories">Service Categories</a></li>
     <li><a href="#configuration">Configuration</a></li>
-    <li><a href="#adding-new-tests">Adding New Tests</a></li>
-    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#project-structure">Project Structure</a></li>
+    <li><a href="#test-types">Test Types</a></li>
+    <li><a href="#running-tests">Running Tests</a></li>
+    <li><a href="#kubernetes-testing">Kubernetes Testing</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
   </ol>
 </details>
 
 ______________________________________________________________________
 
-<h2 id="about">🧪 About</h2>
+<h2 id="about">🎯 About</h2>
 
-This repository contains the k6-based performance testing suite for the OpenCloudHub ML platform. It provides testing across all platform services, from quick smoke tests to soak tests that find memory leaks and stability issues.
+This repository contains the **k6-based performance testing suite** example for the OpenCloudHub ML platform. It provides comprehensive testing capabilities across all platform services—from quick smoke tests validating service health to extended soak tests that uncover memory leaks and stability issues.
 
-**Why Performance Testing?**
+### Why Performance Testing?
 
-- Validate services respond correctly under various load conditions
-- Catch regressions before they reach production
-- Understand system limits and capacity planning
-- Ensure ML model inference latency meets SLAs
+Performance testing is critical for ML platforms where inference latency directly impacts user experience:
 
-**Architecture:**
-```
-k6 Tests → Platform Services (Ingress) → Kubernetes Pods
-    ↓
-Results → JSON/Console Output → Analysis
-```
+- **Validate Correctness**: Ensure services respond correctly under various load conditions
+- **Catch Regressions**: Identify performance degradation before reaching production
+- **Capacity Planning**: Understand system limits for infrastructure sizing
+- **SLA Compliance**: Ensure ML model inference latency meets defined thresholds
+
+### Key Capabilities
+
+| Capability              | Description                                               |
+| ----------------------- | --------------------------------------------------------- |
+| **Multi-Type Testing**  | Smoke, load, stress, spike, soak, and breakpoint tests    |
+| **Service Coverage**    | ML models, MLOps tools, infrastructure, and observability |
+| **Kubernetes Native**   | Run tests inside the cluster using k6-operator            |
+| **Grafana Integration** | Results tagged for dashboard filtering and analysis       |
+
+______________________________________________________________________
+
+<h2 id="thesis-context">📚 Thesis Context</h2>
+
+### Purpose in the Thesis
+
+This work demonstrates how k6 can be integrated for continuous performance validation, with results feeding into Grafana dashboards for trend analysis across deployments.
+
+
+### Related Repositories
+
+| Repository                                                                        | Purpose                                                               |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [`gitops`](https://github.com/OpenCloudHub/gitops/tree/main/src/platform/testing) | ArgoCD application definitions and Kubernetes manifests for the tests |  |
+| **`api-testing`** (this repo)                                                     | Performance testing suite                                             |
+
+
 
 ______________________________________________________________________
 
 <h2 id="features">✨ Features</h2>
 
-- 🚀 **Multiple Test Types**: Smoke, load, stress, spike, soak, and breakpoint tests
-- 📊 **Service Categories**: Organized tests for ML models, MLOps, infrastructure, and observability
-- 🔧 **Reusable Helpers**: Common HTTP utilities and data loading functions
-- ⚙️ **Configurable Thresholds**: Per-test-type thresholds tuned for local Kind clusters
-- 📈 **Automatic Reporting**: JSON output with detailed metrics per test run
-- 🐳 **DevContainer Ready**: Works out of the box in VS Code DevContainers
-- ☸️ **Kubernetes Native**: Run tests inside the cluster using k6-operator
+- 🚀 **Multiple Test Types** — Smoke, load, stress, spike, soak, and breakpoint tests with predefined profiles
+- 📊 **Service Categories** — Organized tests for ML models, MLOps, infrastructure, and observability services
+- 🔧 **Reusable Helpers** — Common HTTP utilities, data loading, and check functions
+- ⚙️ **Configurable Thresholds** — Per-test-type thresholds tuned for local Kind/Minikube clusters
+- 📈 **Automatic Reporting** — JSON output with detailed metrics per test run
+- 🏷️ **Grafana Tagging** — All requests tagged for dashboard filtering (testid, test_type, test_target)
+- 🐳 **DevContainer Ready** — Works out of the box in VS Code DevContainers
+- ☸️ **Kubernetes Native** — Run tests inside the cluster using k6-operator
 
 ______________________________________________________________________
 
-<h2 id="test-types">📊 Test Types</h2>
+<h2 id="architecture">🏗️ Architecture</h2>
 
-Different test types serve different purposes in validating system behavior:
+### Execution Modes
 
-| Test           | Duration | VUs    | Purpose                       | When to Use                         |
-| -------------- | -------- | ------ | ----------------------------- | ----------------------------------- |
-| **Smoke**      | 10s      | 1      | Quick health validation       | After deployments, CI/CD pipelines  |
-| **Load**       | ~9m      | 5-10   | Normal traffic simulation     | Capacity validation                 |
-| **Stress**     | ~8m      | 5-20   | Beyond normal capacity        | Find breaking points                |
-| **Spike**      | ~3m      | 3-25   | Sudden traffic bursts         | Test auto-scaling, resilience       |
-| **Soak**       | 30m+     | 5      | Extended duration             | Find memory leaks, stability issues |
-| **Breakpoint** | ~10m     | 10-100 | Increasing load until failure | Determine max capacity              |
+Tests can run in two modes:
 
-### Test Type Details
+| Mode           | Command                                                                                  | Description                                                |
+| -------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Local**      | `make smoke`                                                                             | Run k6 directly from DevContainer against cluster services |
+| **In-Cluster** | Via [gitops repo](https://github.com/OpenCloudHub/gitops/tree/main/src/platform/testing) | k6-operator runs tests inside Kubernetes                   |
 
-**🔍 Smoke Tests**
+### Local Execution
 
-Quick validation that services are alive and responding. Run after every deployment.
-```bash
-make smoke                # All services
-make smoke-fashion-mnist  # Single model
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DevContainer                                                               │
+│  ┌──────────┐     ┌───────────────┐     ┌────────────────────────────┐      │
+│  │  make    │───▶│  k6 Runtime   │───▶│  Services (via Ingress)    │      │
+│  │  smoke   │     │               │     │  *.opencloudhub.org        │      │
+│  └──────────┘     └───────┬───────┘     └────────────────────────────┘      │
+│                           │                                                 │
+│                           ▼                                                 │
+│                   results/<timestamp>/                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**📈 Load Tests**
+### In-Cluster Execution (k6-operator)
 
-Simulate expected production traffic patterns. Validates response times under normal conditions.
-```bash
-make load                 # All load tests
-make load-fashion-mnist   # Single model
+For Kubernetes-native testing, the [gitops repo](https://github.com/OpenCloudHub/gitops/tree/main/src/platform/testing) manages TestRun CRDs that use this repo's Docker image:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Kubernetes Cluster                                                         │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐       │
+│  │  k6-operator     │──▶│  k6 Runner Pod   │──▶│ Services         │       │
+│  │                  │    │  (k6-tests image)│    │ (internal DNS)   │       │
+│  └──────────────────┘    └────────┬─────────┘    └──────────────────┘       │
+│                                   │                                         │
+│                                   ▼                                         │
+│                           Prometheus (metrics)                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**💪 Stress Tests**
+The Docker image (`opencloudhuborg/k6-tests`) packages all tests, config, and data from this repo.
 
-Push the system beyond normal capacity to find its limits and observe degradation behavior.
-```bash
-make stress-fashion-mnist
+### Component Overview
+
 ```
-
-**📈 Spike Tests**
-
-Sudden traffic bursts to test system resilience and recovery.
-```bash
-make spike-fashion-mnist
-```
-
-**🕐 Soak Tests**
-
-Extended duration tests to find memory leaks, connection exhaustion, or gradual degradation.
-```bash
-make soak-fashion-mnist  # 30 min sustained load
-```
-
-**🔥 Breakpoint Tests**
-
-Continuously increase load until the system fails to determine maximum capacity.
-```bash
-make breakpoint-fashion-mnist
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Test Suite                                     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   config/                    helpers/                    tests/             │
+│   ├── environments.js        ├── checks.js              ├── 01-smoke/       │
+│   │   (service URLs)         │   (assertions)           ├── 02-load/        │
+│   ├── endpoints.js           ├── data.js                ├── 03-stress/      │
+│   │   (API paths)            │   (test data)            ├── 04-spike/       │
+│   └── thresholds.js          └── http.js                ├── 05-soak/        │
+│       (SLA limits)               (requests)             └── 06-breakpoint/  │
+│                                                                             │
+│   data/                      scripts/                   results/            │
+│   ├── fashion-mnist.json     └── summary.sh            └── <timestamp>/     │
+│   ├── wine.json                 (aggregation)              (JSON output)    │
+│   └── qwen-prompts.json                                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ______________________________________________________________________
@@ -140,466 +172,311 @@ ______________________________________________________________________
 
 ### Prerequisites
 
-- Docker
-- VS Code with DevContainers extension (recommended)
-- Access to OpenCloudHub cluster (Minikube or remote)
+| Requirement          | Purpose                              |
+| -------------------- | ------------------------------------ |
+| Docker               | Container runtime for DevContainer   |
+| VS Code              | IDE with DevContainers extension     |
+| OpenCloudHub Cluster | Target platform (Minikube or remote) |
 
-### Setup
+### Setup Steps
 
-1. **Clone the repository**
+**1. Clone the repository**
+
 ```bash
-   git clone https://github.com/opencloudhub/api-testing.git
-   cd api-testing
+git clone https://github.com/opencloudhub/api-testing.git
+cd api-testing
 ```
 
-2. **Open in DevContainer** (Recommended)
+**2. Open in DevContainer** (Recommended)
 
-   VSCode: `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
+Press `Ctrl+Shift+P` → `Dev Containers: Rebuild and Reopen in Container`
 
-   The DevContainer includes k6 pre-installed and configured.
+The DevContainer includes k6 pre-installed and configured.
 
-3. **Configure /etc/hosts** (for local Minikube cluster)
+**3. Configure /etc/hosts** (for local cluster)
 
-   Ensure your host machine has the cluster IPs mapped:
+Ensure your host machine has cluster IPs mapped:
+
 ```bash
-   cat /etc/hosts | grep opencloudhub
-   # Should show entries like:
-   # 10.103.251.179 mlflow.internal.opencloudhub.org
-   # 10.103.251.179 api.opencloudhub.org
+cat /etc/hosts | grep opencloudhub
+# Should show entries like:
+# 192.168.49.2 mlflow.internal.opencloudhub.org
+# 192.168.49.2 api.opencloudhub.org
 ```
 
-4. **Verify Setup**
+**4. Verify Setup**
+
 ```bash
-   make list    # Show available tests
-   make help    # Show all make targets
+make help    # Show all make targets
+make list    # List available test scripts
+```
+
+**5. Run First Test**
+
+```bash
+make smoke-platform-mlops  # Quick health check
+```
+
+______________________________________________________________________
+
+<h2 id="configuration">⚙️ Configuration</h2>
+
+### Environment URLs (`config/environments.js`)
+
+Defines service URLs per environment. Two environments are supported:
+
+| Environment | Use Case                  | URL Pattern                  |
+| ----------- | ------------------------- | ---------------------------- |
+| `dev`       | Local testing via ingress | `https://*.opencloudhub.org` |
+| `internal`  | In-cluster testing        | `http://*.svc.cluster.local` |
+
+```javascript
+// Example: Switch environment
+// CLI: TEST_ENV=internal make smoke
+
+const ENVIRONMENTS = {
+  dev: {
+    models: { api: 'https://api.opencloudhub.org' },
+    platform: {
+      mlops: { mlflow: 'https://mlflow.internal.opencloudhub.org' }
+    }
+  },
+  internal: {
+    platform: {
+      mlops: { mlflow: 'http://mlflow.mlops.svc.cluster.local:5000' }
+    }
+  }
+};
+```
+
+### Thresholds (`config/thresholds.js`)
+
+Performance thresholds and load profiles per test type:
+
+| Metric                  | Smoke | Load  | Stress | Spike | Soak |
+| ----------------------- | ----- | ----- | ------ | ----- | ---- |
+| `http_req_failed`       | <10%  | <5%   | <10%   | <15%  | <5%  |
+| `http_req_duration` p95 | <3s   | <2.5s | <4s    | <5s   | <3s  |
+| `checks` pass rate      | >90%  | >90%  | >85%   | >80%  | >90% |
+
+### Endpoints (`config/endpoints.js`)
+
+Common endpoint patterns by service type:
+
+```javascript
+// Custom ML models (FastAPI)
+export const CUSTOM_MODEL_ENDPOINTS = {
+  health: '/health',
+  info: '/info',
+  predict: '/predict'
+};
+
+// Base LLM models (OpenAI-compatible)
+export const BASE_MODEL_ENDPOINTS = {
+  models: '/models',
+  chat: '/chat/completions'
+};
+```
+
+______________________________________________________________________
+
+<h2 id="project-structure">📁 Project Structure</h2>
+
+```
+api-testing/
+├── config/                    # Configuration files
+│   ├── endpoints.js           # API endpoint patterns by service type
+│   ├── environments.js        # Service URLs per environment (dev, internal)
+│   └── thresholds.js          # Performance thresholds and load profiles
+│
+├── data/                      # Test data files
+│   ├── fashion-mnist.json     # Image samples (784 pixels each)
+│   ├── wine.json              # Wine feature samples (13 features)
+│   ├── qwen-prompts.json      # LLM prompt samples
+│   └── rag-queries.json       # RAG query samples
+│
+├── helpers/                   # Reusable test utilities
+│   ├── checks.js              # Standardized k6 check functions
+│   ├── data.js                # Data loading (SharedArray) utilities
+│   └── http.js                # HTTP request wrappers with checks
+│
+├── tests/                     # Test scripts organized by type
+│   ├── 01-smoke/              # Quick health validation (10s, 1 VU)
+│   │   ├── apps/              # Team applications
+│   │   ├── models/            # ML model tests
+│   │   │   ├── base/          # Base LLM models (qwen)
+│   │   │   └── custom/        # Custom models (fashion-mnist, wine)
+│   │   └── platform/          # Platform services
+│   │       ├── gitops.js      # ArgoCD
+│   │       ├── infrastructure.js  # MinIO, pgAdmin
+│   │       ├── mlops.js       # MLflow, Argo Workflows
+│   │       └── observability.js   # Grafana
+│   ├── 02-load/               # Normal traffic (~9 min, 5-10 VUs)
+│   ├── 03-stress/             # Beyond normal (~18 min, 5-20 VUs)
+│   ├── 04-spike/              # Traffic bursts (~2.5 min, 3-25 VUs)
+│   ├── 05-soak/               # Extended duration (~34 min, 5 VUs)
+│   └── 06-breakpoint/         # Find limits (~10 min, 10-100 req/s)
+│
+├── scripts/
+│   └── summary.sh             # Results aggregation script
+│
+├── results/                   # Test output (gitignored)
+│   └── <timestamp>/           # Per-run results
+│       ├── smoke-*.json       # Full k6 output
+│       └── smoke-*-summary.json  # Aggregated metrics
+│
+├── Dockerfile                 # Container image for k6-operator
+├── Makefile                   # Test orchestration commands
+└── README.md                  # This documentation
+```
+
+______________________________________________________________________
+
+<h2 id="test-types">📊 Test Types</h2>
+
+Different test types validate different aspects of system behavior:
+
+| Test           | Duration | VUs          | Purpose                   | When to Use              |
+| -------------- | -------- | ------------ | ------------------------- | ------------------------ |
+| **Smoke**      | 10s      | 1            | Quick health validation   | After deployments, CI/CD |
+| **Load**       | ~9m      | 5→10         | Normal traffic simulation | Capacity validation      |
+| **Stress**     | ~18m     | 5→20         | Beyond normal capacity    | Find breaking points     |
+| **Spike**      | ~2.5m    | 3→25         | Sudden traffic bursts     | Test auto-scaling        |
+| **Soak**       | 34m+     | 5            | Extended duration         | Find memory leaks        |
+| **Breakpoint** | ~10m     | 10→100 req/s | Increasing until failure  | Max capacity             |
+
+### Smoke Tests 🔍
+
+Quick validation that services are alive and responding correctly.
+
+```bash
+make smoke              # All services
+make smoke-platform     # Platform services only
+make smoke-fashion-mnist  # Single model
+```
+
+### Load Tests 📈
+
+Simulate expected production traffic patterns with ramping VUs.
+
+```bash
+make load               # All load tests
+make load-fashion-mnist # Single model (~9 minutes)
+```
+
+### Stress Tests 💪
+
+Push beyond normal capacity to observe degradation behavior.
+
+```bash
+make stress-fashion-mnist  # ~18 minutes
+```
+
+### Spike Tests ⚡
+
+Sudden traffic bursts to test resilience and recovery.
+
+```bash
+make spike-fashion-mnist  # ~2.5 minutes
+```
+
+### Soak Tests 🕐
+
+Extended duration to find memory leaks and connection exhaustion.
+
+```bash
+make soak-fashion-mnist  # ~34 minutes
+```
+
+### Breakpoint Tests 🔥
+
+Continuously increase load until the system fails.
+
+```bash
+make breakpoint-fashion-mnist  # ~10 minutes
 ```
 
 ______________________________________________________________________
 
 <h2 id="running-tests">🏃 Running Tests</h2>
 
-All tests are run via `make` commands. Results are saved to `results/<timestamp>/`.
-
 ### Quick Commands
+
 ```bash
 # Run all smoke tests (recommended first step)
 make smoke
 
-# Run specific category
-make smoke-platform      # All platform services
-make smoke-models        # All ML models
+# Run by category
+make smoke-platform      # MLOps, GitOps, Infrastructure, Observability
+make smoke-models        # Fashion MNIST, Wine, Qwen
 
 # Run specific service
 make smoke-fashion-mnist
 make smoke-platform-mlops
 
-# Run load tests
-make load
-make load-fashion-mnist
-
-# Run stress/spike/soak/breakpoint
-make stress-fashion-mnist
-make spike-fashion-mnist
-make soak-fashion-mnist
-make breakpoint-fashion-mnist
+# Different environment
+TEST_ENV=internal make smoke
 ```
 
-### Environment Selection
-```bash
-# Use different environment (default: dev)
-TEST_ENV=prod make smoke
+### View Results
 
-# Available environments: dev, cluster
-```
-
-### Viewing Results
 ```bash
-# Show summary of latest test run
+# Show summary of latest run
 make summary
 
-# Results are saved with timestamps
+# Browse result files
 ls results/
 
-# View summary JSON
-cat results/2025-11-28_00-38-37/smoke-fashion-mnist-summary.json | jq
+# View detailed JSON
+cat results/20251203-120000/smoke-platform-mlops-summary.json | jq
+```
+
+### Available Targets
+
+Run `make help` to see all available targets:
+
+```
+Test Types:
+  smoke      - Quick health checks (10s)
+  load       - Normal load (~9min)
+  stress     - Beyond normal (~18min)
+  spike      - Sudden bursts (~2.5min)
+  soak       - Extended duration (~34min)
+  breakpoint - Find limits (~10min)
+
+Targets:
+  smoke               Run all smoke tests
+  smoke-platform      Platform smoke tests
+  smoke-models        Model smoke tests
+  load                Run all load tests
+  ...
 ```
 
 ______________________________________________________________________
 
-<h2 id="kubernetes-testing">☸️ Running Tests in Kubernetes</h2>
+<h2 id="kubernetes-testing">☸️ Kubernetes Testing</h2>
 
-Tests can run inside the Kubernetes cluster using the [k6-operator](https://grafana.com/docs/k6/latest/set-up/set-up-distributed-k6/usage/executing-k6-scripts-with-testrun-crd/). This enables:
+For in-cluster testing, see the [gitops repo testing section](https://github.com/OpenCloudHub/gitops/tree/main/src/platform/testing) which manages:
 
-- Testing internal services without ingress exposure
-- Distributed load testing across multiple pods
-- Integration with ArgoCD hooks for post-deployment validation
-- Results visible in Grafana dashboards
+- **k6-operator** deployment
+- **TestRun CRDs** for each test
+- **Makefile** for easy execution (`make smoke-fashion-mnist`)
+- **Prometheus integration** for metrics export
 
-### Architecture
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Kubernetes Cluster                                              │
-│                                                                 │
-│  ┌──────────────┐     ┌──────────────┐     ┌────────────────┐  │
-│  │ k6-operator  │────▶│ TestRun CRD  │────▶│ k6 Runner Pod  │  │
-│  └──────────────┘     └──────────────┘     └───────┬────────┘  │
-│                                                     │           │
-│                              ┌──────────────────────┘           │
-│                              ▼                                  │
-│  ┌─────────────────────────────────────────────────────────────┐
-│  │ Target Services (internal DNS)                              │
-│  │ • mlflow.mlops.svc.cluster.local                            │
-│  │ • argocd-server.argocd.svc.cluster.local                    │
-│  │ • grafana.observability.svc.cluster.local                   │
-│  └─────────────────────────────────────────────────────────────┘
-└─────────────────────────────────────────────────────────────────┘
-```
+The tests use the Docker image built from this repo (`opencloudhuborg/k6-tests`), which packages all test scripts, config, and data.
 
-### Prerequisites
+### Docker Image
 
-1. **k6-operator** installed in the cluster (managed via [gitops repo](https://github.com/opencloudhub/gitops) at `src/platform/testing/k6-operator/`)
-2. **k6-tests image** built and pushed to Docker Hub
-
-### How It Works
-
-Tests are packaged into a container image that the k6-operator pulls and executes:
-```
-┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│  api-testing    │      │   Docker Hub    │      │   k6-operator   │
-│  repo           │─────▶│   k6-tests      │◀─────│   TestRun CRD   │
-│  (CI builds)    │ push │   image         │ pull │                 │
-└─────────────────┘      └─────────────────┘      └─────────────────┘
-```
-
-**Test Image Structure:**
-```dockerfile
-FROM grafana/k6:latest
-COPY config/ /tests/config/
-COPY helpers/ /tests/helpers/
-COPY tests/ /tests/tests/
-COPY data/ /tests/data/
-WORKDIR /tests
-```
-
-CI automatically builds and pushes on changes to the `main` branch.
-
-### TestRun CRDs
-
-TestRun custom resources are defined in the [gitops repo](https://github.com/opencloudhub/gitops) under `src/platform/testing/k6-tests/`. Example:
-```yaml
-apiVersion: k6.io/v1alpha1
-kind: TestRun
-metadata:
-  name: smoke-platform-mlops
-  namespace: k6-testing
-spec:
-  parallelism: 1
-  script:
-    localFile: /tests/tests/01-smoke/platform/mlops.js
-  arguments: --insecure-skip-tls-verify
-  cleanup: post
-  runner:
-    image: docker.io/opencloudhub/k6-tests:latest
-    env:
-      - name: TEST_ENV
-        value: "cluster"
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-```
-
-### Running Tests in Cluster
-
-**Manual execution:**
 ```bash
-# Apply a TestRun
-kubectl apply -f src/platform/testing/k6-tests/smoke-platform-mlops.yaml
+# Build locally
+docker build -t opencloudhuborg/k6-tests:latest .
 
-# Watch logs
-kubectl logs -f -l app=k6 -n k6-testing
-
-# Check status
-kubectl get testruns -n k6-testing
-
-# Clean up (if cleanup: post is not set)
-kubectl delete testrun smoke-platform-mlops -n k6-testing
-```
-
-### Cluster Environment
-
-When running inside the cluster, tests use internal service DNS. The `cluster` environment is configured in `config/environments.js`:
-```javascript
-cluster: {
-  platform: {
-    mlops: {
-      mlflow: 'http://mlflow.mlops.svc.cluster.local:5000',
-    },
-    gitops: {
-      argocd: 'http://argocd-server.argocd.svc.cluster.local',
-    },
-  },
-}
-```
-
-Set `TEST_ENV=cluster` in the TestRun's runner env to use these URLs.
-
-### Available TestRuns
-
-| TestRun                 | Target                   | Description            |
-| ----------------------- | ------------------------ | ---------------------- |
-| `smoke-platform-mlops`  | MLflow, Argo Workflows   | MLOps services health  |
-| `smoke-platform-gitops` | ArgoCD                   | GitOps services health |
-| `smoke-platform-infra`  | MinIO, pgAdmin           | Infrastructure health  |
-| `smoke-platform-obs`    | Grafana                  | Observability health   |
-| `smoke-fashion-mnist`   | Fashion MNIST classifier | Model inference smoke  |
-| `smoke-wine`            | Wine classifier          | Model inference smoke  |
-| `smoke-qwen`            | Qwen LLM                 | LLM inference smoke    |
-
-______________________________________________________________________
-
-<h2 id="project-structure">📁 Project Structure</h2>
-```
-```
-
-______________________________________________________________________
-
-<h2 id="service-categories">🏷️ Service Categories</h2>
-
-Tests are organized by service category to allow targeted testing:
-
-### ML Models (`tests/*/models/`)
-
-ML inference services with standard endpoints. Tested with actual prediction data.
-
-| Model             | Type       | Endpoints                                      | Test Data                 |
-| ----------------- | ---------- | ---------------------------------------------- | ------------------------- |
-| **fashion-mnist** | Custom     | `/health`, `/info`, `/predict`                 | `data/fashion-mnist.json` |
-| **wine**          | Custom     | `/health`, `/info`, `/predict`                 | `data/wine.json`          |
-| **qwen-0.5b**     | Base (LLM) | `/models`, `/completions`, `/chat/completions` | `data/qwen-prompts.json`  |
-
-**Endpoints tested:**
-
-- `GET /` - Service info
-- `GET /health` - Health check with model status
-- `GET /info` - Model metadata (URI, version, classes)
-- `POST /predict` - Actual predictions with test data
-
-### Platform Services (`tests/*/platform/`)
-
-Infrastructure and tooling services. Health checks only (no data payloads).
-
-| Category           | Services               | Purpose                                     |
-| ------------------ | ---------------------- | ------------------------------------------- |
-| **MLOps**          | MLflow, Argo Workflows | Experiment tracking, workflow orchestration |
-| **GitOps**         | ArgoCD                 | Deployment management                       |
-| **Infrastructure** | MinIO, pgAdmin         | Object storage, database admin              |
-| **Observability**  | Grafana                | Monitoring dashboards                       |
-
-### Team Applications (`tests/*/apps/`)
-
-Custom applications built on the platform.
-
-| App              | Endpoints                            |
-| ---------------- | ------------------------------------ |
-| **demo-backend** | `/api/`, `/api/health`, `/api/query` |
-
-______________________________________________________________________
-
-<h2 id="configuration">⚙️ Configuration</h2>
-
-### Service URLs (`config/environments.js`)
-
-Define service URLs per environment:
-```javascript
-const ENVIRONMENTS = {
-  dev: {
-    insecureSkipTLSVerify: true,
-    models: {
-      api: 'https://api.opencloudhub.org',
-      custom: {
-        'fashion-mnist': {
-          path: '/models/custom/fashion-mnist-classifier',
-        },
-      },
-    },
-    platform: {
-      mlops: {
-        mlflow: 'https://mlflow.internal.opencloudhub.org',
-      },
-    },
-  },
-  cluster: {
-    insecureSkipTLSVerify: true,
-    platform: {
-      mlops: {
-        mlflow: 'http://mlflow.mlops.svc.cluster.local:5000',
-      },
-    },
-  },
-};
-```
-
-### Load Profiles (`config/thresholds.js`)
-
-Adjust VUs and thresholds per test type:
-```javascript
-export const LOAD_PROFILES = {
-  smoke: { vus: 1, duration: '10s' },
-  load: {
-    stages: [
-      { duration: '1m', target: 5 },
-      { duration: '3m', target: 5 },
-      { duration: '1m', target: 0 },
-    ],
-  },
-};
-
-export const THRESHOLDS = {
-  smoke: {
-    http_req_failed: ['rate<0.10'],
-    http_req_duration: ['p(95)<3000'],
-    checks: ['rate>0.90'],
-  },
-};
-```
-
-### Endpoints (`config/endpoints.js`)
-
-Common endpoint patterns by service type:
-```javascript
-export const CUSTOM_MODEL_ENDPOINTS = {
-  root: '/',
-  health: '/health',
-  info: '/info',
-  predict: '/predict',
-};
-```
-
-______________________________________________________________________
-
-<h2 id="adding-new-tests">🎨 Adding New Tests</h2>
-
-### Adding a New ML Model
-
-1. **Add to environments.js:**
-```javascript
-   custom: {
-     'my-model': {
-       path: '/models/custom/my-model',
-     },
-   },
-```
-
-2. **Add test data:**
-```bash
-   cat > data/my-model.json << EOF
-   [
-     {"feature1": 1.0, "feature2": 2.0},
-     {"feature1": 1.5, "feature2": 2.5}
-   ]
-   EOF
-```
-
-3. **Create test file:**
-```bash
-   cp tests/01-smoke/models/custom/fashion-mnist.js \
-      tests/01-smoke/models/custom/my-model.js
-   # Edit to use 'my-model' instead of 'fashion-mnist'
-```
-
-4. **Add to Makefile:**
-```makefile
-   .PHONY: smoke-my-model
-   smoke-my-model: $(RUN_DIR)
-   	$(K6) tests/01-smoke/models/custom/my-model.js \
-   		--out json=$(RUN_DIR)/smoke-my-model.json \
-   		--summary-export=$(RUN_DIR)/smoke-my-model-summary.json
-```
-
-5. **Add TestRun for Kubernetes (optional):**
-
-   Create `smoke-my-model.yaml` in the gitops repo under `src/platform/testing/k6-tests/`.
-
-### Adding a New Platform Service
-
-1. **Add to environments.js:**
-```javascript
-   platform: {
-     myservice: {
-       'my-service': 'https://my-service.internal.opencloudhub.org',
-     },
-   },
-```
-
-2. **Add endpoints to endpoints.js:**
-```javascript
-   'my-service': {
-     root: '/',
-     health: '/health',
-   },
-```
-
-3. **Create test file following existing patterns.**
-
-______________________________________________________________________
-
-<h2 id="troubleshooting">🐛 Troubleshooting</h2>
-
-### Connection Errors
-```bash
-# Verify service is accessible
-curl -k https://mlflow.internal.opencloudhub.org/
-
-# Check /etc/hosts has correct IP
-cat /etc/hosts | grep opencloudhub
-
-# Verify in devcontainer (should use host network)
-nslookup mlflow.internal.opencloudhub.org
-```
-
-### TLS Errors
-
-Ensure `insecureSkipTLSVerify: true` in `config/environments.js` for local dev.
-
-### Data Loading Errors
-```bash
-# Verify data files exist and are valid JSON
-ls -lh data/
-jq . data/fashion-mnist.json | head -20
-```
-
-### Slow Performance (Kind)
-
-- Reduce VUs in `config/thresholds.js`
-- Increase timeout thresholds
-- Allocate more resources to Kind cluster
-
-### Test Not Found
-```bash
-# List available tests
-make list
-
-# Check test file exists
-ls tests/01-smoke/models/custom/
-```
-
-### Kubernetes TestRun Issues
-```bash
-# Check operator is running
-kubectl get pods -n k6-testing
-
-# Check TestRun status
-kubectl describe testrun smoke-platform-mlops -n k6-testing
-
-# Check runner pod logs
-kubectl logs -l app=k6 -n k6-testing
-
-# Verify image is accessible
-kubectl run test --image=opencloudhub/k6-tests:latest --rm -it -- ls /tests/
+# Image contents
+/tests/
+├── config/      # Environment configs
+├── helpers/     # Test utilities
+├── tests/       # Test scripts
+└── data/        # Test data
 ```
 
 ______________________________________________________________________
@@ -608,29 +485,41 @@ ______________________________________________________________________
 
 Contributions are welcome! This project follows OpenCloudHub's contribution standards.
 
-**Adding Tests:**
+### Adding a New Test
 
-1. Follow existing file structure and naming conventions
-2. Use helpers from `helpers/http.js` and `helpers/data.js`
-3. Add make target for new tests
-4. Test locally before submitting
-5. Add TestRun CRD for Kubernetes execution if applicable
+1. **Add service URL** to `config/environments.js`
+2. **Create test file** following existing patterns in `tests/`
+3. **Add make target** to `Makefile`
+4. **Test locally** before submitting
 
-Please see our [Contributing Guidelines](https://github.com/opencloudhub/.github/blob/main/.github/CONTRIBUTING.md) and [Code of Conduct](https://github.com/opencloudhub/.github/blob/main/.github/CODE_OF_CONDUCT.md) for more details.
+### Code Style
+
+- Use descriptive check names for Grafana filtering
+- Follow existing file structure and naming conventions
+- Add JSDoc comments for exported functions
+- Use helpers from `helpers/` for consistency
+
+### Pull Request Process
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit with descriptive messages
+4. Open PR against `main`
+
+See [Contributing Guidelines](https://github.com/opencloudhub/.github/blob/main/.github/CONTRIBUTING.md) for details.
 
 ______________________________________________________________________
 
 <h2 id="license">📄 License</h2>
 
-Distributed under the Apache 2.0 License. See [LICENSE](LICENSE) for more information.
+Distributed under the **Apache 2.0 License**. See [LICENSE](LICENSE) for details.
 
 ______________________________________________________________________
 
-<h2 id="acknowledgements">🙏 Acknowledgements</h2>
+<h2 id="contact">📬 Contact</h2>
 
-- [k6](https://k6.io/) - Modern load testing tool
-- [k6-operator](https://github.com/grafana/k6-operator) - Kubernetes operator for k6
-- [Grafana](https://grafana.com/) - Visualization and monitoring
-- [Ray Serve](https://docs.ray.io/en/latest/serve/) - ML model serving
+**OpenCloudHub** — [GitHub Organization](https://github.com/opencloudhub)
+
+Project Link: [https://github.com/opencloudhub/api-testing](https://github.com/opencloudhub/api-testing)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

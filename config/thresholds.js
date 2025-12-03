@@ -1,6 +1,50 @@
-// config/thresholds.js
-// Thresholds and load profiles per test type
+// =============================================================================
+// Test Thresholds and Load Profiles
+// =============================================================================
+//
+// Defines performance thresholds and load patterns for each test type.
+// Thresholds are tuned for local Kind/Minikube clusters and may need
+// adjustment for production environments.
+//
+// Test Types
+// ----------
+// - smoke      : Quick health validation (1 VU, 10s)
+// - load       : Normal traffic simulation (5-10 VUs, ~9min)
+// - stress     : Beyond normal capacity (5-20 VUs, ~18min)
+// - spike      : Sudden traffic bursts (3-25 VUs, ~2.5min)
+// - soak       : Extended duration (5 VUs, 34min)
+// - breakpoint : Increasing load until failure (10-100 req/s, ~10min)
+//
+// Thresholds Explained
+// --------------------
+// - http_req_failed    : Acceptable failure rate (e.g., rate<0.05 = <5%)
+// - http_req_duration  : Response time percentiles (e.g., p(95)<3000ms)
+// - http_reqs          : Minimum request throughput
+// - checks             : Pass rate for k6 check() assertions
+//
+// Load Profile Executors
+// ----------------------
+// - constant-vus        : Fixed number of virtual users
+// - ramping-vus         : VUs change over stages
+// - ramping-arrival-rate: Request rate changes over stages
+//
+// Usage
+// -----
+// Import and use buildOptions() in test files:
+//   import { buildOptions } from '../config/thresholds.js';
+//   export const options = buildOptions('smoke', 'model-wine', scenarios);
+//
+// See Also
+// --------
+// - k6 docs: https://k6.io/docs/using-k6/thresholds/
+// - k6 executors: https://k6.io/docs/using-k6/scenarios/executors/
+// =============================================================================
 
+// -----------------------------------------------------------------------------
+// Performance Thresholds by Test Type
+// -----------------------------------------------------------------------------
+// These thresholds determine pass/fail criteria for each test type.
+// Adjust based on your SLA requirements and infrastructure capacity.
 export const THRESHOLDS = {
   smoke: {
     'http_req_failed': ['rate<0.10'],
@@ -35,6 +79,11 @@ export const THRESHOLDS = {
   },
 };
 
+// -----------------------------------------------------------------------------
+// Load Profiles by Test Type
+// -----------------------------------------------------------------------------
+// Defines the virtual user (VU) patterns and durations for each test type.
+// Stages represent phases: ramp-up → steady-state → ramp-down.
 export const LOAD_PROFILES = {
   smoke: {
     executor: 'constant-vus',
@@ -97,12 +146,36 @@ export const LOAD_PROFILES = {
   },
 };
 
+// -----------------------------------------------------------------------------
+// buildOptions() - Construct k6 Options Object
+// -----------------------------------------------------------------------------
 /**
- * Build k6 options with proper tagging for Grafana filtering
- * @param {string} testType - smoke, load, stress, spike, soak, breakpoint
- * @param {string} testTarget - e.g., 'platform-mlops', 'model-wine'
- * @param {object} scenarios - Named scenarios with exec functions
- * @param {object} extraThresholds - Additional per-scenario thresholds
+ * Build k6 options with proper tagging for Grafana filtering.
+ *
+ * Creates a complete k6 options object with:
+ * - Configured scenarios with load profiles
+ * - Thresholds for pass/fail determination
+ * - Tags for Grafana dashboard filtering
+ * - Summary statistics configuration
+ *
+ * @param {string} testType - Test type: smoke, load, stress, spike, soak, breakpoint
+ * @param {string} testTarget - Target identifier (e.g., 'platform-mlops', 'model-wine')
+ * @param {object} scenarios - Named scenarios with exec functions (optional)
+ * @param {object} extraThresholds - Additional per-scenario thresholds (optional)
+ * @returns {object} Complete k6 options object
+ *
+ * @example
+ * // Basic usage
+ * export const options = buildOptions('smoke', 'model-wine');
+ *
+ * @example
+ * // With custom scenarios and thresholds
+ * export const options = buildOptions('load', 'model-wine', {
+ *   'wine-health': { exec: 'testHealth' },
+ *   'wine-predict': { exec: 'testPredict' },
+ * }, {
+ *   'http_req_duration{scenario:wine-predict}': ['p(95)<5000'],
+ * });
  */
 export function buildOptions(testType, testTarget, scenarios = null, extraThresholds = {}) {
   const profile = LOAD_PROFILES[testType];

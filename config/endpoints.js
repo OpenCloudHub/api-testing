@@ -1,7 +1,34 @@
-// config/endpoints.js
-// Common endpoint patterns by service type
+// =============================================================================
+// API Endpoint Configuration
+// =============================================================================
+//
+// Central configuration for all API endpoints across the OpenCloudHub platform.
+// Defines standard endpoint patterns by service type to ensure consistency.
+//
+// Service Types
+// -------------
+// - Custom Models    : FastAPI-based ML models (fashion-mnist, wine)
+// - Base Models      : OpenAI-compatible LLM endpoints (qwen)
+// - Platform         : Infrastructure services (MLflow, ArgoCD, MinIO, etc.)
+// - Applications     : Demo/team applications (RAG backend)
+//
+// Usage
+// -----
+// Import the relevant endpoint constant in test files:
+//   import { CUSTOM_MODEL_ENDPOINTS } from '../config/endpoints.js';
+//   const healthUrl = `${baseUrl}${CUSTOM_MODEL_ENDPOINTS.health}`;
+//
+// See Also
+// --------
+// - config/environments.js : Base URLs for each environment
+// - config/thresholds.js   : Performance thresholds per test type
+// =============================================================================
 
-// Custom models (fashion-mnist, wine) - FastAPI with standard endpoints
+// -----------------------------------------------------------------------------
+// Custom ML Models (fashion-mnist, wine)
+// -----------------------------------------------------------------------------
+// FastAPI-based model servers with standard prediction endpoints.
+// These models are deployed via Ray Serve with a consistent API contract.
 export const CUSTOM_MODEL_ENDPOINTS = {
   root: '/',
   health: '/health',
@@ -11,20 +38,32 @@ export const CUSTOM_MODEL_ENDPOINTS = {
   openapi: '/openapi.json',
 };
 
-// Base models (qwen) - OpenAI-compatible API
+// -----------------------------------------------------------------------------
+// Base LLM Models (qwen-0.5b)
+// -----------------------------------------------------------------------------
+// OpenAI-compatible API for large language models.
+// Uses vLLM as the inference engine with standard chat completions format.
 export const BASE_MODEL_ENDPOINTS = {
   models: '/models',
   completions: '/completions',
   chat: '/chat/completions',
 };
 
-// Ray Serve dashboards
+// -----------------------------------------------------------------------------
+// Ray Serve Dashboards
+// -----------------------------------------------------------------------------
+// Dashboard endpoints for monitoring Ray Serve model deployments.
+// Each model has its own dashboard for metrics and debugging.
 export const RAY_DASHBOARD_ENDPOINTS = {
   root: '/',
   // Add more as needed
 };
 
-// Platform service health endpoints (best-effort, may vary)
+// -----------------------------------------------------------------------------
+// Platform Service Endpoints
+// -----------------------------------------------------------------------------
+// Health check and API endpoints for core platform services.
+// Note: Endpoint availability may vary based on service configuration.
 export const PLATFORM_ENDPOINTS = {
   // MLflow
   mlflow: {
@@ -62,7 +101,11 @@ export const PLATFORM_ENDPOINTS = {
   },
 };
 
-// Demo RAG backend endpoints
+// -----------------------------------------------------------------------------
+// Demo Application Endpoints
+// -----------------------------------------------------------------------------
+// RAG-powered demo backend application.
+// Provides prompt-based query interface with admin endpoints.
 export const DEMO_BACKEND_ENDPOINTS = {
   root: '/api/',
   health: '/api/health',
