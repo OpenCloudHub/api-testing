@@ -93,11 +93,13 @@ export const LOAD_PROFILES = {
   load: {
     executor: 'ramping-vus',
     stages: [
-      { duration: '1m', target: 5 },
-      { duration: '3m', target: 5 },
-      { duration: '1m', target: 10 },
-      { duration: '3m', target: 10 },
-      { duration: '1m', target: 0 },
+      { duration: '1m', target: 10 },   // Start higher
+      { duration: '2m', target: 10 },   // Hold - establish baseline
+      { duration: '1m', target: 25 },   // Push to trigger scaling
+      { duration: '3m', target: 25 },   // Hold - let replicas come up
+      { duration: '1m', target: 40 },   // Push again for 3rd replica
+      { duration: '3m', target: 40 },   // Hold at peak
+      { duration: '2m', target: 0 },    // Ramp down - show scale-in
     ],
   },
   stress: {
