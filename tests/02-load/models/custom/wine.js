@@ -1,4 +1,20 @@
-// tests/01-smoke/models/custom/wine.js
+// =============================================================================
+// Load Test: Wine Quality Classifier
+// =============================================================================
+//
+// Normal traffic simulation for the Wine quality classification model.
+// Tests sustained load with multiple virtual users.
+//
+// Load Profile
+// ------------
+// - Duration : ~9 minutes
+// - VUs      : Ramps 0 → 10 → 30 → 50 → 0
+//
+// Run Command
+// -----------
+// make load-wine
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

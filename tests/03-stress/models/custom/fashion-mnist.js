@@ -1,4 +1,21 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Stress Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Push beyond normal capacity for the Fashion MNIST image classification model.
+// Tests system degradation behavior under heavy load.
+//
+// Load Profile
+// ------------
+// - Duration : ~18 minutes
+// - VUs      : Ramps 5 → 10 → 20 → 5
+// - Pattern  : Gradual increase, sustained peaks, recovery observation
+//
+// Run Command
+// -----------
+// make stress-fashion-mnist
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

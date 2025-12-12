@@ -1,4 +1,21 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Spike Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Sudden traffic bursts for the Fashion MNIST image classification model.
+// Tests resilience and recovery from sudden load spikes.
+//
+// Load Profile
+// ------------
+// - Duration : ~2.5 minutes
+// - VUs      : Spikes from 3 → 25 → 3
+// - Pattern  : Quick ramp up, sustained spike, rapid cooldown
+//
+// Run Command
+// -----------
+// make spike-fashion-mnist
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

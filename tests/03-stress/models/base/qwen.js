@@ -1,4 +1,20 @@
-// tests/01-smoke/models/base/qwen.js
+// =============================================================================
+// Stress Test: Qwen 0.5B Language Model
+// =============================================================================
+//
+// Push beyond normal capacity for the Qwen LLM inference endpoint.
+// Tests system degradation behavior under heavy load.
+//
+// Load Profile
+// ------------
+// - Duration : ~18 minutes
+// - VUs      : Ramps 5 → 10 → 20 → 5
+//
+// Run Command
+// -----------
+// make stress-qwen
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getBaseModelUrl } from '../../../../config/environments.js';

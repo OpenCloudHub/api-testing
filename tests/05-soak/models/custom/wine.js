@@ -1,4 +1,20 @@
-// tests/01-smoke/models/custom/wine.js
+// =============================================================================
+// Soak Test: Wine Quality Classifier
+// =============================================================================
+//
+// Extended duration test for the Wine quality classification model.
+// Finds memory leaks, connection exhaustion, and stability issues.
+//
+// Load Profile
+// ------------
+// - Duration : ~34 minutes
+// - VUs      : Constant 5 VUs
+//
+// Run Command
+// -----------
+// make soak-wine
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';
@@ -10,7 +26,7 @@ const TEST_TYPE = 'soak';
 const TEST_TARGET = 'model-wine';
 
 const MODEL_URL = getCustomModelUrl('wine');
-const WINE_DATA = loadJsonData('wine-samples', '../../../data/wine.json');
+const WINE_DATA = loadJsonData('wine-samples', '../../../../data/wine.json');
 
 export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
   'wine-health': {

@@ -1,4 +1,20 @@
-// tests/01-smoke/models/base/qwen.js
+// =============================================================================
+// Load Test: Qwen 0.5B Language Model
+// =============================================================================
+//
+// Normal traffic simulation for the Qwen LLM inference endpoint.
+// Tests sustained load with multiple virtual users.
+//
+// Load Profile
+// ------------
+// - Duration : ~9 minutes
+// - VUs      : Ramps 0 → 10 → 30 → 50 → 0
+//
+// Run Command
+// -----------
+// make load-qwen
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getBaseModelUrl } from '../../../../config/environments.js';

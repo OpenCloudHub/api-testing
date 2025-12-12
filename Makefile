@@ -415,7 +415,7 @@ help:  ## Show this help
 	@echo "$(YELLOW)Test Types:$(NC)"
 	@echo "  smoke      - Quick health checks (10s)"
 	@echo "  load       - Normal load (~9min)"
-	@echo "  stress     - Beyond normal (~8min)"
+	@echo "  stress     - Beyond normal (~18min)"
 	@echo "  spike      - Sudden bursts (~2.5min)"
 	@echo "  soak       - Extended duration (~34min)"
 	@echo "  breakpoint - Find limits (~10min)"

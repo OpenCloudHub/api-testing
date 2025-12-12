@@ -1,4 +1,21 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Soak Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Extended duration test for the Fashion MNIST image classification model.
+// Finds memory leaks, connection exhaustion, and stability issues.
+//
+// Load Profile
+// ------------
+// - Duration : ~34 minutes
+// - VUs      : Constant 5 VUs
+// - Pattern  : Ramp up, long steady state, ramp down
+//
+// Run Command
+// -----------
+// make soak-fashion-mnist
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

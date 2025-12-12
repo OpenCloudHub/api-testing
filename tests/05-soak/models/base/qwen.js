@@ -1,4 +1,20 @@
-// tests/01-smoke/models/base/qwen.js
+// =============================================================================
+// Soak Test: Qwen 0.5B Language Model
+// =============================================================================
+//
+// Extended duration test for the Qwen LLM inference endpoint.
+// Finds memory leaks, connection exhaustion, and stability issues.
+//
+// Load Profile
+// ------------
+// - Duration : ~34 minutes
+// - VUs      : Constant 5 VUs
+//
+// Run Command
+// -----------
+// make soak-qwen
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getBaseModelUrl } from '../../../../config/environments.js';

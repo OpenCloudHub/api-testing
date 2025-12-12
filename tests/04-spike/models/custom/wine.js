@@ -1,4 +1,20 @@
-// tests/01-smoke/models/custom/wine.js
+// =============================================================================
+// Spike Test: Wine Quality Classifier
+// =============================================================================
+//
+// Sudden traffic bursts for the Wine quality classification model.
+// Tests resilience and recovery from sudden load spikes.
+//
+// Load Profile
+// ------------
+// - Duration : ~2.5 minutes
+// - VUs      : Spikes from 3 → 25 → 3
+//
+// Run Command
+// -----------
+// make spike-wine
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV, getCustomModelUrl } from '../../../../config/environments.js';

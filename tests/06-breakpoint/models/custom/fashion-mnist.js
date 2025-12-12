@@ -1,16 +1,45 @@
-// tests/01-smoke/models/custom/fashion-mnist.js
+// =============================================================================
+// Breakpoint Test: Fashion MNIST Classifier
+// =============================================================================
+//
+// Find system limits for the Fashion MNIST image classification model.
+// Continuously increases load until the system fails.
+//
+// Load Profile
+// ------------
+// - Duration : ~10 minutes
+// - Rate     : 10 → 100 req/s ramping
+// - Pattern  : Ramping arrival rate to find breaking point
+//
+// Model Details
+// -------------
+// - Type      : Custom FastAPI model served via Ray Serve
+// - Input     : 28x28 grayscale image (784 pixel values)
+// - Output    : Class prediction (0-9)
+// - Endpoint  : /models/custom/fashion-mnist-classifier
+//
+// Run Command
+// -----------
+// make breakpoint-fashion-mnist
+//
+// Expected Thresholds
+// -------------------
+// - Error rate: < 50% (relaxed for breakpoint)
+// - P95 latency: < 10000ms
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getCustomModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
-import { loadJsonData, randomSample } from '../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../../helpers/data.js';
 
 const TEST_TYPE = 'breakpoint';
 const TEST_TARGET = 'model-fashion-mnist';
 
 const MODEL_URL = getCustomModelUrl('fashion-mnist');
-const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../data/fashion-mnist.json');
+const MNIST_DATA = loadJsonData('fashion-mnist-samples', '../../../../data/fashion-mnist.json');
 
 export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
   'fashion-health': {
@@ -38,7 +67,8 @@ export function testHealth() {
 export function testPredict() {
   group('fashion-predict', () => {
     const sample = randomSample(MNIST_DATA);
-    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(sample), {
+    const payload = { images: [sample] };  // API expects {"images": [[...pixels...]]}
+    const res = http.post(`${MODEL_URL}/predict`, JSON.stringify(payload), {
       headers: { 'Content-Type': 'application/json' },
       tags: { name: 'fashion-predict' },
     });

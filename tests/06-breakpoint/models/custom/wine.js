@@ -1,16 +1,32 @@
-// tests/01-smoke/models/custom/wine.js
+// =============================================================================
+// Breakpoint Test: Wine Quality Classifier
+// =============================================================================
+//
+// Find system limits for the Wine quality classification model.
+// Continuously increases load until the system fails.
+//
+// Load Profile
+// ------------
+// - Duration : ~10 minutes
+// - Rate     : 10 → 100 req/s ramping
+//
+// Run Command
+// -----------
+// make breakpoint-wine
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getCustomModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkPrediction, checkJsonField } from '../../../helpers/checks.js';
-import { loadJsonData, randomSample } from '../../../helpers/data.js';
+import { ENV, getCustomModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkPrediction, checkJsonField } from '../../../../helpers/checks.js';
+import { loadJsonData, randomSample } from '../../../../helpers/data.js';
 
 const TEST_TYPE = 'breakpoint';
 const TEST_TARGET = 'model-wine';
 
 const MODEL_URL = getCustomModelUrl('wine');
-const WINE_DATA = loadJsonData('wine-samples', '../../../data/wine.json');
+const WINE_DATA = loadJsonData('wine-samples', '../../../../data/wine.json');
 
 export const options = buildOptions(TEST_TYPE, TEST_TARGET, {
   'wine-health': {
