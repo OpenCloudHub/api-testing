@@ -1,4 +1,4 @@
-// tests/01-smoke/platform/gitops.js
+// Soak Test: GitOps Platform Services
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';

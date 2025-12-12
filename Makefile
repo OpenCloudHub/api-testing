@@ -9,7 +9,7 @@
 # Test Types
 # ----------
 # - smoke      : Quick health validation (1 VU, 10s)
-# - load       : Normal traffic simulation (5-10 VUs, ~9min)
+# - load       : Normal traffic simulation (10-50 VUs, ~7.5min)
 # - stress     : Beyond normal capacity (5-20 VUs, ~18min)
 # - spike      : Sudden traffic bursts (3-25 VUs, ~2.5min)
 # - soak       : Extended duration (5 VUs, 34min)
@@ -414,7 +414,7 @@ help:  ## Show this help
 	@echo ""
 	@echo "$(YELLOW)Test Types:$(NC)"
 	@echo "  smoke      - Quick health checks (10s)"
-	@echo "  load       - Normal load (~9min)"
+	@echo "  load       - Normal load (~7.5min)"
 	@echo "  stress     - Beyond normal (~18min)"
 	@echo "  spike      - Sudden bursts (~2.5min)"
 	@echo "  soak       - Extended duration (~34min)"

@@ -1,4 +1,4 @@
-// tests/01-smoke/apps/demo-backend.js
+// Soak Test: Demo Backend
 import http from 'k6/http';
 import { group, sleep } from 'k6';
 import { ENV } from '../../../config/environments.js';

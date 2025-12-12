@@ -311,7 +311,7 @@ api-testing/
 │   │       ├── infrastructure.js  # MinIO, pgAdmin
 │   │       ├── mlops.js       # MLflow, Argo Workflows
 │   │       └── observability.js   # Grafana
-│   ├── 02-load/               # Normal traffic (~9 min, 5-10 VUs)
+│   ├── 02-load/               # Normal traffic (~7.5 min, 10-50 VUs)
 │   ├── 03-stress/             # Beyond normal (~18 min, 5-20 VUs)
 │   ├── 04-spike/              # Traffic bursts (~2.5 min, 3-25 VUs)
 │   ├── 05-soak/               # Extended duration (~34 min, 5 VUs)
@@ -339,7 +339,7 @@ Different test types validate different aspects of system behavior:
 | Test           | Duration | VUs          | Purpose                   | When to Use              |
 | -------------- | -------- | ------------ | ------------------------- | ------------------------ |
 | **Smoke**      | 10s      | 1            | Quick health validation   | After deployments, CI/CD |
-| **Load**       | ~9m      | 5→10         | Normal traffic simulation | Capacity validation      |
+| **Load**       | ~7.5m    | 10→50        | Normal traffic simulation | Capacity validation      |
 | **Stress**     | ~18m     | 5→20         | Beyond normal capacity    | Find breaking points     |
 | **Spike**      | ~2.5m    | 3→25         | Sudden traffic bursts     | Test auto-scaling        |
 | **Soak**       | 34m+     | 5            | Extended duration         | Find memory leaks        |
@@ -361,7 +361,7 @@ Simulate expected production traffic patterns with ramping VUs.
 
 ```bash
 make load               # All load tests
-make load-fashion-mnist # Single model (~9 minutes)
+make load-fashion-mnist # Single model (~7.5 minutes)
 ```
 
 ### Stress Tests 💪

@@ -1,9 +1,25 @@
-// tests/01-smoke/models/base/qwen.js
+// =============================================================================
+// Breakpoint Test: Qwen 0.5B Language Model
+// =============================================================================
+//
+// Find system limits for the Qwen LLM inference endpoint.
+// Continuously increases load until the system fails.
+//
+// Load Profile
+// ------------
+// - Duration : ~10 minutes
+// - Rate     : 10 → 100 req/s ramping
+//
+// Run Command
+// -----------
+// make breakpoint-qwen
+// =============================================================================
+
 import http from 'k6/http';
 import { group, sleep } from 'k6';
-import { ENV, getBaseModelUrl } from '../../../config/environments.js';
-import { buildOptions } from '../../../config/thresholds.js';
-import { checkHealth, checkCompletion, checkJsonField } from '../../../helpers/checks.js';
+import { ENV, getBaseModelUrl } from '../../../../config/environments.js';
+import { buildOptions } from '../../../../config/thresholds.js';
+import { checkHealth, checkCompletion, checkJsonField } from '../../../../helpers/checks.js';
 
 const TEST_TYPE = 'breakpoint';
 const TEST_TARGET = 'model-qwen';
